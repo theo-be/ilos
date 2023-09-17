@@ -1,5 +1,5 @@
 
-#include <SDL.h>
+#include <SDL2/SDL.h>
 
 #include <iostream>
 #include <fstream>
@@ -91,10 +91,7 @@ Scene::Scene(SDL_Renderer *renderer) : m_mapWidth(0), m_mapHeight(0), m_camera({
 }
 
 Scene::~Scene () {
-    for (int i = 0; i < m_mapHeight; i++) {
-        m_map[i].clear();
-    }
-    m_map->clear();
+    unloadMap();
     m_tiles->clear();
     m_mobList->clear();
     m_itemDropList->clear();
@@ -196,6 +193,7 @@ int Scene::initMap (const char *fileName) {
  * @brief decharge la carte
 */
 void Scene::unloadMap () {
+    if (m_map->size() <= 0) return;
     for (int i = 0; i < m_mapHeight; i++) {
         m_map->at(i).clear();
     }

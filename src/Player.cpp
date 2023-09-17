@@ -17,9 +17,9 @@ Player::Player() : m_target(nullptr)
 Player::Player (Entity *target) : m_target(target) 
 {}
 
-Player::~Player () {
+// Player::~Player () {
     
-}
+// }
 
 
 void Player::doActions (list<Entity> &entityList, unsigned int dt) {

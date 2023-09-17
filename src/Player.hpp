@@ -16,7 +16,7 @@ class Player {
     Player ();
     Player (Entity *target);
 
-    ~Player();
+    // ~Player();
 
     void doActions (std::list<Entity> &entityList, unsigned int dt);
 

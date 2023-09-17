@@ -5,17 +5,13 @@
  * @brief Fichier principal du projet
 */
 
-#include <SDL.h>
-#include <SDL_ttf.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 
 #include "constants.hpp"
 
 
-#ifdef WINDOWS
 
-#else
-#include <unistd.h>
-#endif
 
 #include <iostream>
 #include <cstdlib>
@@ -27,7 +23,6 @@
 #include <algorithm>
 #include <chrono>
 
-#include <thread>
 
 
 
@@ -620,8 +615,6 @@ int main(int argc, char *argv[]) {
         renderingTimeDT = chrono::duration_cast<chrono::duration<double>>(renderingTimeEnd - renderingTimeBegin).count();
 
 
-        cout << "cdt : " << computationTimeDT << ", rdt : " << renderingTimeDT << ", ";
-
         // Limite d'images par secondes
         limitFPS(frameLimit);
         frameLimit = SDL_GetTicks() + F_DELTA;
@@ -640,7 +633,7 @@ int main(int argc, char *argv[]) {
         secondLastFrame = lastFrame;
         lastFrame = frameEnd;
 
-        cout << "DT : " << globalDT << '\n';
+
 
     }
     
