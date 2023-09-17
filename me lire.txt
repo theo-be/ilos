@@ -1,0 +1,15 @@
+q d pour le deplacement horizontal
+z pour saurter
+le joueur est le carre noir
+les carres rouges sont des entites hostiles
+leur sauter dessus pour les tuer
+les carres verts sont des entites passives
+leur parler en appuyant sur e
+ne pas fermer la console pendant l'execution du programme
+p pour fermer le programme ou la croix en haut de la fenetre
+m pour centrer la camera sur le joueur
+o pour afficher la liste des entites
+l pour ajouter une entite hostile a la position du joueur
+v pour des/afficher des informations de debug
+eviter d'appuyer sur k pour ne pas causer de fuite de memoire
+
