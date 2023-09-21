@@ -206,7 +206,7 @@ void Scene::unloadMap () {
  * @returns 0 en cas de succes
  * @brief charge les tuiles dans la liste des textures de la carte
 */
-int Scene::loadTiles (SDL_Renderer *renderer) {
+int Scene::loadTiles () {
     string tileFile = "";
     SDL_Texture *tile;
     int i = 0;
@@ -216,7 +216,7 @@ int Scene::loadTiles (SDL_Renderer *renderer) {
         stream.str("");
         stream << "ressources/fg" << i << ".bmp";
         tileFile = stream.str();
-        tile = loadTexture(renderer, tileFile);
+        tile = loadTexture(m_renderer, tileFile);
         if (tile) m_tiles->push_back(tile);
         else break;
     }
@@ -254,7 +254,7 @@ int Scene::loadEntities () {
 int Scene::loadMobEntities () {
     ifstream file;
     Entity e;
-    SDL_Rect h = {0, 0, m_tileSize, m_tileSize};
+    SDL_FRect h = {0, 0, 1., 1.};
     string fileName = "data/entities/entities";
     string entityName = "";
     int value;
@@ -279,9 +279,9 @@ int Scene::loadMobEntities () {
         if (entityName == "DEFAULT") break;
         e.setName(entityName);
         file >> value;
-        h.x = value * m_tileSize;
+        h.x = value;
         file >> value;
-        h.y = value * m_tileSize;
+        h.y = value;
         e.setHitbox(h);
         file >> value;
         e.setHp(value);
@@ -397,7 +397,7 @@ void Scene::addEntityToPlayerPos () {
     ostringstream stream;
     stream << "PEDRO" << e.getId();
     string name = stream.str();
-    SDL_Rect h = m_player->getTarget()->getHitbox();
+    SDL_FRect h = m_player->getTarget()->getHitbox();
     e.setName(name);
     e.setHitbox(h);
     e.setTextureId(0);
@@ -430,22 +430,30 @@ void Scene::doActions (bool left, bool right, bool up, bool down, unsigned int d
  * @brief Deplace la camera vers l'entite cible
 */
 void Scene::moveCamera (const Entity &target) {
-    SDL_Rect screenPosition = {0, 0, m_tileSize, m_tileSize};
+    SDL_FRect hitbox = target.getHitbox();
+    SDL_FRect screenPosition;
 
-    SDL_Rect hitbox = target.getHitbox();
-    screenPosition.x = hitbox.x - m_camera.x;
-    screenPosition.y = hitbox.y - m_camera.y;
+    screenPosition.x = hitbox.x * m_tileSize - m_camera.x;
+    screenPosition.y = hitbox.y * m_tileSize - m_camera.y;
+    screenPosition.w = hitbox.w * m_tileSize;
+    screenPosition.h = hitbox.h * m_tileSize;
 
-    if (screenPosition.x > m_maxAreaWidth) {
-        m_camera.x = hitbox.x - m_maxAreaWidth;
-    } else if (screenPosition.x < m_mapRenderWidth * m_tileSize - m_maxAreaWidth) {
-        m_camera.x = hitbox.x - (m_mapRenderWidth * m_tileSize - m_maxAreaWidth);
+    // droite
+    if (screenPosition.x + screenPosition.w > m_maxAreaWidth) {
+        m_camera.x = hitbox.x * m_tileSize - m_maxAreaWidth;
+    }
+    // gauche
+    else if (screenPosition.x < m_mapRenderWidth - m_maxAreaWidth) {
+        m_camera.x = hitbox.x  * m_tileSize- (m_mapRenderWidth * m_tileSize - m_maxAreaWidth);
     }
 
-    if (screenPosition.y > m_maxAreaHeight) {
-        m_camera.y = hitbox.y - m_maxAreaHeight;
-    } else if (screenPosition.y < m_mapRenderHeight * m_tileSize - m_maxAreaHeight) {
-        m_camera.y = hitbox.y - (m_mapRenderHeight * m_tileSize - m_maxAreaHeight);
+    // bas
+    if (screenPosition.y + screenPosition.h > m_maxAreaHeight) {
+        m_camera.y = hitbox.y * m_tileSize - m_maxAreaHeight;
+    }
+    // haut
+    else if (screenPosition.y < m_mapRenderHeight - m_maxAreaHeight) {
+        m_camera.y = hitbox.y * m_tileSize - (m_mapRenderHeight * m_tileSize - m_maxAreaHeight);
     }
 
     m_camera.x = min<int>(max<int>(m_camera.x, 0), (m_mapWidth - m_mapRenderWidth + 1) * m_tileSize);
@@ -454,7 +462,6 @@ void Scene::moveCamera (const Entity &target) {
     for (std::list<Entity>::iterator it = m_mobList->begin(); it != m_mobList->end(); it++) {
         (*it).checkIfVisible(m_camera, m_tileSize);
     }
-
 }
 
 
@@ -464,16 +471,14 @@ void Scene::moveCamera (const Entity &target) {
  * @param y position y globale
  * @returns true si l'entite est dans la carte, false sinon
 */
-bool Scene::isInsideMap (int x, int y) const {
-    if (x / m_tileSize >= m_mapWidth || y / m_tileSize >= m_mapHeight) return false;
+bool Scene::isInsideMap (float x, float y) const {
+    if (x >= m_mapWidth || y >= m_mapHeight) return false;
     if (x < 0 || y < 0) return false;
     for (int i = 0; i < SOLID_TILES_COUNT; i++) {
-        if (m_map->at(y / m_tileSize).at(x / m_tileSize) == m_collisionIdArray[i]) return true;
+        if (m_map->at((int)y).at((int)x) == m_collisionIdArray[i]) return true;
     }
     return false;
 }
-
-
 
 /**
  * @fn bool Scene::isOOB (int x, int y) const
@@ -482,7 +487,7 @@ bool Scene::isInsideMap (int x, int y) const {
  * @returns true si l'entite est dans la carte, false sinon
 */
 bool Scene::isOOB (int x, int y) const {
-    if (x / m_tileSize >= m_mapWidth || y / m_tileSize >= m_mapHeight) return true;
+    if (x >= m_mapWidth || y >= m_mapHeight) return true;
     if (x < 0 || y < 0) return true;
     return false;
 }
@@ -553,8 +558,12 @@ void Scene::setCameraPos (int x, int y) {
 */
 void Scene::displayScene () const {
     displayMap();
-    for_each(m_mobList->begin(), m_mobList->end(), *m_showEntities);
-    m_player->getTarget()->show(m_renderer, m_camera, *m_mobEntityTextures);
+    // for_each(m_mobList->begin(), m_mobList->end(), *m_showEntities);
+    for (std::list<Entity>::iterator it = m_mobList->begin(); it != m_mobList->end(); it++) {
+        if ((*it).isVisible())
+            (*it).show(m_renderer, m_camera, m_tileSize, *m_mobEntityTextures);
+    }
+    m_player->getTarget()->show(m_renderer, m_camera, m_tileSize, *m_mobEntityTextures);
 }
 
 /**
@@ -627,7 +636,7 @@ void Scene::initPlayer () {
     m_mobList->push_front(e);
     m_player->setTarget(&m_mobList->front());
     
-    SDL_Rect prect = {5 * TILE_SIZE, 26 * TILE_SIZE, TILE_SIZE, TILE_SIZE};
+    SDL_FRect prect = {5, 26, 1, 1};
     Vector2D ppos;
     ppos.setCoords(prect.x + prect.w / 2, prect.y + prect.h / 2);
     string pname = "Joueur";

@@ -26,6 +26,8 @@
 
 
 
+
+
 #include "main.hpp"
 #include "Entity.hpp"
 #include "Scene.hpp"
@@ -46,9 +48,9 @@ int main(int argc, char *argv[]) {
     SDL_VERSION(&v);
     
     string strver;
-    ostringstream flux;
-    flux << "SDL v" << (int)v.major << "." << (int)v.minor << "." << (int)v.patch;
-    cout << flux.str() << endl;
+    ostringstream ostr;
+    ostr << "SDL v" << (int)v.major << "." << (int)v.minor << "." << (int)v.patch;
+    cout << ostr.str() << endl;
     string gameVersion = "ilos v0.4";
     cout << gameVersion << endl;
     
@@ -100,7 +102,7 @@ int main(int argc, char *argv[]) {
     Scene scene(renderer);
     string mapFileName = "data/maps/map";
     scene.initMap(mapFileName.c_str());
-    scene.loadTiles(renderer);
+    scene.loadTiles();
 
     cout << "Scene chargee" << endl;
 
@@ -372,7 +374,7 @@ int main(int argc, char *argv[]) {
                         case SDLK_l:
                             scene.addEntityToPlayerPos();
                             cout << "Nombre d\'entites : " << Entity::getCount() << endl;
-                            cout << "Entite cree : " << scene.getMobList()->front().getNameString() << endl;
+                            cout << "Entite cree : " << scene.getMobList()->front().getNamePtr() << endl;
                             showEntityList(scene.getMobList());
                             break;
                         case SDLK_m:
@@ -450,7 +452,7 @@ int main(int argc, char *argv[]) {
 
             /* Fin des actions principales --------------------------------------------- */
 
-            // font.displayTextWrapped(renderer, "Texte aligné à droite ?", WINDOW_WIDTH / 2, 500, 200, Right, &white);
+            // font.displayTextWrapped("PogChamp", WINDOW_WIDTH / 2, 500, 200, Center);
 
             // SDL_Rect fre = {200, 200, 0, 0};
             // SDL_QueryTexture(font.m_atlas, NULL, NULL, &fre.w, &fre.h);
@@ -465,16 +467,17 @@ int main(int argc, char *argv[]) {
         if (debug) {
             SDL_Point p = {0, 0};
             Entity *target = scene.getPlayer()->getTarget();
-            SDL_Rect r = scene.getPlayer()->getTarget()->getHitbox();
+            SDL_FRect r = scene.getPlayer()->getTarget()->getHitbox();
             pair<float, float> pos = target->getPosition().getCoords();
             pair<float, float> v = target->getVelocity().getCoords();
             pair<float, float> v0 = target->getVelocity0().getCoords();
             pair<float, float> a = target->getAcceleration().getCoords();
             pair<int, int> mapDim = scene.getMapDim();
+            SDL_Rect camera = scene.getCameraPos();
 
 
             // INFORMATIONS SUR LE MONDE
-            SDL_Rect bg = {0, 0, 250, 160};
+            SDL_Rect bg = {0, 0, 300, 160};
             SDL_SetRenderDrawColor(renderer, 255, 255, 255, 100);
             SDL_RenderFillRect(renderer, &bg);
 
@@ -498,6 +501,11 @@ int main(int argc, char *argv[]) {
             toStringConvertor << "taille carte : " << mapDim.first << " x " << mapDim.second;
             p.y += FONT_SIZE_INTERFACE;
             font.displayText(toStringConvertor.str().c_str(), p.x, p.y);
+            // POSITION CAMERA
+            toStringConvertor.str("");
+            toStringConvertor << "Position de la caméra : " << camera.x << " x " << camera.y;
+            p.y += FONT_SIZE_INTERFACE;
+            font.displayText(toStringConvertor.str().c_str(), p.x, p.y);
             // TAILLE DE TUILE
             toStringConvertor.str("");
             toStringConvertor << "taille tuile : " << scene.getTileSize() << "px";
@@ -505,17 +513,17 @@ int main(int argc, char *argv[]) {
             font.displayText(toStringConvertor.str().c_str(), p.x, p.y);
             // TEMPS DE CALCUL
             toStringConvertor.str("");
-            toStringConvertor << "temps de calcul : " << computationTimeDT << "ms";
+            toStringConvertor << "temps de calcul : " << computationTimeDT * 1000 << "ms";
             p.y += FONT_SIZE_INTERFACE;
             font.displayText(toStringConvertor.str().c_str(), p.x, p.y);
             // TEMPS DE RENDU
             toStringConvertor.str("");
-            toStringConvertor << "temps de rendu : " << renderingTimeDT << "ms";
+            toStringConvertor << "temps de rendu : " << renderingTimeDT * 1000 << "ms";
             p.y += FONT_SIZE_INTERFACE;
             font.displayText(toStringConvertor.str().c_str(), p.x, p.y);
             // TEMPS DE RENDU
             toStringConvertor.str("");
-            toStringConvertor << "temps total : " << renderingTimeDT + computationTimeDT << "ms";
+            toStringConvertor << "temps total : " << (renderingTimeDT + computationTimeDT) * 1000 << "ms";
             p.y += FONT_SIZE_INTERFACE;
             font.displayText(toStringConvertor.str().c_str(), p.x, p.y);
 
@@ -567,6 +575,11 @@ int main(int argc, char *argv[]) {
             toStringConvertor << "Position : " << pos.first << "x " << pos.second << "y";
             p.y += FONT_SIZE_INTERFACE;
             font.displayText(toStringConvertor.str().c_str(), p.x, p.y, Right);
+            // HITBOX
+            toStringConvertor.str("");
+            toStringConvertor << "Boite de collision : " << r.x << "x " << r.y << "y";
+            p.y += FONT_SIZE_INTERFACE;
+            font.displayText(toStringConvertor.str().c_str(), p.x, p.y, Right);
             // VITESSE
             toStringConvertor.str("");
             toStringConvertor << "Vitesse : " << v.first << "x " << v.second << "y";
@@ -590,7 +603,7 @@ int main(int argc, char *argv[]) {
             // ENTITE CIBLE INTERACTION
             toStringConvertor.str("");
             toStringConvertor << "Entite d\'interaction : ";
-            if (target->hasAvailableInteraction()) toStringConvertor << target->getInteractionEntityTarget()->getNameString();
+            if (target->hasAvailableInteraction()) toStringConvertor << target->getInteractionEntityTarget()->getNamePtr();
             else toStringConvertor << "NULL";
             p.y += FONT_SIZE_INTERFACE;
             font.displayText(toStringConvertor.str().c_str(), p.x, p.y, Right);

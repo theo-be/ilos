@@ -31,7 +31,7 @@ class Entity {
 
     // constructeurs
     Entity ();
-    Entity (int x, int y, int hp, bool passive, const std::string &name, int textureId, int dialogueId);
+    Entity (float x, float y, float w, float h, int hp, bool passive, const std::string &name, int textureId, int dialogueId);
 
 
     // destructeur
@@ -40,7 +40,7 @@ class Entity {
     // methodes de lecture
 
     int getId () const;
-    SDL_Rect getHitbox () const;
+    SDL_FRect getHitbox () const;
     int getHp () const;
     bool isPassive () const;
     int getFlightTime () const;
@@ -59,7 +59,7 @@ class Entity {
     Vector2D getGlobalPosition () const;
     Vector2D getPosition0 () const;
     std::string getName () const;
-    const char *getNameString () const;
+    const char *getNamePtr () const;
 
     static int getCount ();
 
@@ -68,7 +68,7 @@ class Entity {
 
     // methodes d'affectation
 
-    void setHitbox(SDL_Rect &hitbox);
+    void setHitbox(SDL_FRect &hitbox);
     void setHp (int hp);
     void setPassive (bool state);
     void setTextureId (int id);
@@ -90,14 +90,14 @@ class Entity {
 
     // constantes
     
-    void show (SDL_Renderer *renderer, const SDL_Rect &camera, std::vector<SDL_Texture*> &entityTextures) const;
+    void show (SDL_Renderer *renderer, const SDL_Rect &camera, int tileSize, std::vector<SDL_Texture*> &entityTextures) const;
     bool collideWith (Entity &entity) const;
 
     // non constantes
 
     void kill (std::list<Entity> &entityList, Entity &e);
     void move (Scene &scene, bool left, bool right, bool up, bool down, unsigned int dt, SDL_Renderer*);
-    void moveToWorld (Scene &scene, int dx, int dy, SDL_Renderer*);
+    void moveToWorld (Scene &scene, float dx, float dy, SDL_Renderer*);
     void reduceInvincibilityTime (float time);
     void checkEntityInteractions ();
     void doInteractions ();
@@ -107,7 +107,7 @@ class Entity {
 
     protected:
     int m_id;
-    SDL_Rect m_hitbox;
+    SDL_FRect m_hitbox;
     int m_hp;
     bool m_passive;
     int m_textureId;

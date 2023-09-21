@@ -91,7 +91,7 @@ void addEntityToPlayerPos (list<Entity> &entityList, Player &player) {
     ostringstream stream;
     stream << "PEDRO" << e.getId();
     string name = stream.str();
-    SDL_Rect h = player.getTarget()->getHitbox();
+    SDL_FRect h = player.getTarget()->getHitbox();
     e.setName(name);
     e.setHitbox(h);
     e.setTextureId(0);
@@ -106,11 +106,13 @@ void addEntityToPlayerPos (list<Entity> &entityList, Player &player) {
  * @param entityList liste des entites
  * @returns 0 en cas de succes
  * @brief charge les entites du fichier de sauvegarde
+ * @remarks inutilise, voir Scene::loadEntities
+ * @see Scene::loadEntities
 */
 int loadEntities (list<Entity> &entityList) {
     ifstream file;
     Entity e;
-    SDL_Rect h = {0, 0, TILE_SIZE, TILE_SIZE};
+    SDL_FRect h = {0, 0, TILE_SIZE, TILE_SIZE};
     string fileName = "data/entities/entities";
     // stringstream stream;
     file.open(fileName);

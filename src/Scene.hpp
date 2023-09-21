@@ -9,7 +9,9 @@
 #include <string>
 #include <utility>
 
+#include "Camera.hpp"
 #include "Entity.hpp"
+
 
 class Entity;
 class Player;
@@ -23,7 +25,7 @@ class Scene {
     int initMap (const char *fileName);
     void unloadMap ();
 
-    int loadTiles (SDL_Renderer *renderer);
+    int loadTiles ();
     void unloadTiles ();
 
     int loadEntities ();
@@ -71,7 +73,7 @@ class Scene {
 
     void doActions (bool left, bool right, bool up, bool down, unsigned int dt);
     void moveCamera (const Entity &entity);
-    bool isInsideMap (int x, int y) const;
+    bool isInsideMap (float x, float y) const;
     bool isSolidTile (int blockX, int blockY) const;
     bool isOOB (int x, int y) const;
     void killEntity (Entity &e);
@@ -82,10 +84,13 @@ class Scene {
 
     void initPlayer ();
 
+    
+
     protected:
     int m_mapWidth;
     int m_mapHeight;
     SDL_Rect m_camera;
+    // Camera *m_camera;
     SDL_Renderer *m_renderer;
     Player *m_player;
     int m_tileSize;

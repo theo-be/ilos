@@ -11,6 +11,7 @@
 #include <utility>
 #include <list>
 #include <vector>
+#include <cmath>
 
 #include "constants.hpp"
 
@@ -30,14 +31,14 @@ Entity::Entity ()
     // m_count++;
     cout << "Entite cree, nombre : " << m_count << endl;
     m_nextAvailableId++;
-    m_hitbox = {5 * TILE_SIZE, 27 * TILE_SIZE, TILE_SIZE, TILE_SIZE};
-    m_position.setCoords(5 * TILE_SIZE + m_hitbox.w / 2, 27 * TILE_SIZE + m_hitbox.h / 2);
+    m_hitbox = {5, 27, 1, 1};
+    m_position.setCoords(5.5, 27.5);
     m_tilePosition.setCoords(5, 27);
     m_collideWith.clear();
     m_children.clear();
 }
 
-Entity::Entity (int x, int y, int hp, bool passive, const string &name, int textureId, int dialogueId) 
+Entity::Entity (float x, float y, float w, float h, int hp, bool passive, const string &name, int textureId, int dialogueId) 
 : m_id(m_nextAvailableId), m_hp(hp), m_passive(passive), m_textureId(textureId), m_touchGround(false), m_flightTime(0), m_invincibilityTime(0), m_availableInteraction(false), m_interactionType(None), m_interactionTarget(nullptr), m_playable(true), m_visible(true), m_name(name), m_parent(nullptr), m_position0(0., 0.), m_velocity0(0., 0.), m_velocity(0., 0.), m_acceleration(0., 0.)
 {
     // m_count++;
@@ -45,7 +46,7 @@ Entity::Entity (int x, int y, int hp, bool passive, const string &name, int text
     m_nextAvailableId++;
     m_position.setCoords(x, y);
     m_tilePosition.setCoords(x / TILE_SIZE, y / TILE_SIZE);
-    m_hitbox = {x - TILE_SIZE / 2, y - TILE_SIZE / 2, TILE_SIZE, TILE_SIZE};
+    m_hitbox = {x - w / 2, y - h / 2, w, h};
     m_collideWith.clear();
     m_children.clear();
 }
@@ -68,7 +69,7 @@ int Entity::getId () const {
     return m_id;
 }
 
-SDL_Rect Entity::getHitbox () const {
+SDL_FRect Entity::getHitbox () const {
     return m_hitbox;
 }
 
@@ -108,7 +109,7 @@ string Entity::getName () const {
     return m_name;
 }
 
-const char *Entity::getNameString () const {
+const char *Entity::getNamePtr () const {
     return m_name.c_str();
 }
 
@@ -147,7 +148,7 @@ bool Entity::isVisible () const {
 // methodes d'affectation
 
 
-void Entity::setHitbox (SDL_Rect &hitbox) {
+void Entity::setHitbox (SDL_FRect &hitbox) {
     m_hitbox = hitbox;
 }
 
@@ -252,14 +253,14 @@ void Entity::kill (list<Entity> &entityList, Entity &e) {
  * @param entityTextures liste des textures
  * @brief affiche l'entite
 */
-void Entity::show (SDL_Renderer *renderer, const SDL_Rect &camera, vector<SDL_Texture*> &entityTextures) const {
-    SDL_Rect rect = {
-        m_hitbox.x - camera.x,
-        m_hitbox.y - camera.y,
-        m_hitbox.w, m_hitbox.h
+void Entity::show (SDL_Renderer *renderer, const SDL_Rect &camera, int tileSize, vector<SDL_Texture*> &entityTextures) const {
+    SDL_FRect screenPosition = {
+        m_hitbox.x * tileSize - camera.x,
+        m_hitbox.y * tileSize - camera.y,
+        m_hitbox.w * tileSize, m_hitbox.h * tileSize
     };
     if (m_textureId > -1)
-        SDL_RenderCopy(renderer, entityTextures.at(m_textureId), NULL, &rect);
+        SDL_RenderCopyF(renderer, entityTextures.at(m_textureId), NULL, &screenPosition);
 }
 
 /**
@@ -410,8 +411,22 @@ void Entity::reduceInvincibilityTime (float time) {
  * @brief evalue l'etat de collision entre deux entites
 */
 bool Entity::collideWith (Entity &entity) const {
-    SDL_Rect h = entity.getHitbox();
-    return entity != *this && SDL_HasIntersection(&m_hitbox, &h);
+    // SDL_FRect h = entity.m_hitbox;
+    // return entity != *this && SDL_HasIntersection(&m_hitbox, &h);
+    if (entity == *this) return false;
+    if (
+        (
+        (entity.m_hitbox.x >= m_hitbox.x && entity.m_hitbox.x <= m_hitbox.x + m_hitbox.w)
+        || (entity.m_hitbox.x + entity.m_hitbox.w >= m_hitbox.x && entity.m_hitbox.x + entity.m_hitbox.w <= m_hitbox.x + m_hitbox.w)
+        )
+        &&
+        ((
+        entity.m_hitbox.y >= m_hitbox.y && entity.m_hitbox.y <= m_hitbox.y + m_hitbox.h)
+        || (entity.m_hitbox.y + entity.m_hitbox.h >= m_hitbox.y && entity.m_hitbox.y + entity.m_hitbox.h <= m_hitbox.y + m_hitbox.h)
+        )
+    ) 
+        return true;
+    return false;
 }
 
 /**
@@ -444,7 +459,7 @@ void Entity::checkEntityInteractions () {
 */
 void Entity::doInteractions () {
     if (m_availableInteraction)
-    cout << "Action sur " << m_interactionTarget->getNameString() << endl;
+    cout << "Action sur " << m_interactionTarget->getNamePtr() << endl;
     else cout << "Pas d\'action" << endl;
 }
 
@@ -470,45 +485,45 @@ void Entity::move (Scene &scene, bool left, bool right, bool up, bool down, unsi
     pair<float, float> a = m_acceleration.getCoords();
     pair<float, float> p = m_position.getCoords();
     // decalage de position
-    int dx = 0, dy = 0;
-    m_acceleration.setCoords(a.first, .001);
+    float dx = 0., dy = 0.;
+    m_acceleration.setCoords(a.first, .00003125);
 
     if (m_playable) {
 
         // Horizontal
         if ((left || right) && !(left && right)) {
-            v.first = (right ? 0.0125 * tileSize : -0.0125 * tileSize);
+            v.first = (right ? 0.0125 : -0.0125);
         } else v.first = .0;
+        dx = v.first * dt;
         
         // Vertical
         if (m_touchGround) {
             v.second = 0.0;
             m_flightTime = 0;
             if (up) {
-                v.second = -0.01875 * tileSize;
-                dy = (int)(v.second * dt);
+                v.second = -0.01875;
+                dy = v.second * dt;
                 m_touchGround = false;
             }
         } else {
             m_flightTime += dt;
-            v.second += (a.second * dt / 2);
-            dy = (int)(v.second * dt);
-            v.second += (a.second * dt / 2);
+            v.second += a.second * dt / 2;
+            dy = v.second * dt;
+            v.second += a.second * dt / 2;
         }
 
         m_velocity.setCoords(v.first, v.second);
-        dx = (int)(v.first * dt);
 
         moveToWorld(scene, dx, dy, r);
     }
 
     // Eviter de sortir de la carte
     pair<int, int> dim = scene.getMapDim();
-    m_hitbox.x = min<int>(max<int>(m_hitbox.x, 0), dim.first * tileSize - m_hitbox.w);
-    m_hitbox.y = min<int>(max<int>(m_hitbox.y, 0), dim.second * (tileSize - 1) - m_hitbox.h);
+    m_hitbox.x = min<float>(max<float>(m_hitbox.x, 0), dim.first - m_hitbox.w);
+    m_hitbox.y = min<float>(max<float>(m_hitbox.y, 0), dim.second - m_hitbox.h);
 
-    p.first = min<int>(max<int>(m_hitbox.x + m_hitbox.w / 2, 0), dim.first * tileSize - (m_hitbox.w / 2));
-    p.second = min<int>(max<int>(m_hitbox.y + m_hitbox.h / 2, 0), dim.second * (tileSize - 1) - (m_hitbox.h / 2));
+    p.first = min<float>(max<float>(m_hitbox.x + m_hitbox.w / 2, 0), dim.first - (m_hitbox.w / 2));
+    p.second = min<float>(max<float>(m_hitbox.y + m_hitbox.h / 2, 0), dim.second - (m_hitbox.h / 2));
     m_position.setCoords(p.first, p.second);
 
     // l'entite est-elle visible
@@ -607,6 +622,7 @@ void Entity::move (Scene &scene, bool left, bool right, bool up, bool down, unsi
 }*/
 
 // Troisieme reecriture de la methode moveToWorld
+// A refaire
 /**
  * @fn void Entity::moveToWorld (Scene &scene, float dx, float dy, SDL_Renderer *r)
  * @param scene scene
@@ -616,7 +632,7 @@ void Entity::move (Scene &scene, bool left, bool right, bool up, bool down, unsi
  * @brief deplace une entite sur la carte
  * @see Entity::move
 */
-void Entity::moveToWorld (Scene &scene, int dx, int dy, SDL_Renderer *r) {
+void Entity::moveToWorld (Scene &scene, float dx, float dy, SDL_Renderer *r) {
 
     int tileSize = scene.getTileSize();
     pair<float, float> p = m_position.getCoords();
@@ -625,11 +641,11 @@ void Entity::moveToWorld (Scene &scene, int dx, int dy, SDL_Renderer *r) {
 
     SDL_Rect camera = scene.getCameraPos();
 
-    SDL_Rect movementArea = {0};
-    SDL_Rect debugRect = {0};
+    SDL_FRect movementArea = {0};
+    SDL_FRect debugRect = {0};
 
     bool hit;
-    int replacementPosition = 0;
+    float replacementPosition = 0;
 
     // nombre de tuiles a verifier dans chaque direction
     int blockX, blockY;
@@ -639,6 +655,7 @@ void Entity::moveToWorld (Scene &scene, int dx, int dy, SDL_Renderer *r) {
 
     // a quelle tuile dans la carte commencer la verification
     int startX, startY;
+
 
     if (dx) {
 
@@ -650,41 +667,42 @@ void Entity::moveToWorld (Scene &scene, int dx, int dy, SDL_Renderer *r) {
         }
 
         SDL_SetRenderDrawColor(r, 255, 0, 0, SDL_ALPHA_OPAQUE);
-        debugRect = {movementArea.x - camera.x, movementArea.y - camera.y, movementArea.w, movementArea.h};
-        SDL_RenderFillRect(r, &debugRect);
+        debugRect = {movementArea.x * tileSize - camera.x, movementArea.y * tileSize - camera.y, movementArea.w * tileSize, movementArea.h * tileSize};
+        SDL_RenderFillRectF(r, &debugRect);
 
         // Verification des collisions
 
         // doit etre 1 pour X et taille en tuile + 1 pour Y mais peut etre est superieur avec un grand dt
-        blockX = movementArea.w / tileSize + 1;
-        blockY = movementArea.h / tileSize + 1;
+        blockX = (int)movementArea.w + 1;
+        blockY = (int)movementArea.h + 1;
         // si l'entite est alignee sur une tuile, il ne faut pas s'etendre une tuile de plus vers la droite
-        blockY += m_hitbox.y % tileSize == 0 ? -1 : 0;
+        blockY += floor(m_hitbox.y) == m_hitbox.y ? -1 : 0;
 
         hit = 0;
         increment = dx > 0 ? 1 : -1;
 
-        startX = (dx > 0 ? (m_hitbox.x + m_hitbox.w) / tileSize : (m_hitbox.x - 1) / tileSize);
-        startY = m_hitbox.y / tileSize;
+        startX = (dx > 0 ? (int)(m_hitbox.x + m_hitbox.w) : (int)(m_hitbox.x));
+        startY = (int)m_hitbox.y;
 
         // cout << "blocXY " << blockX << ',' << blockY;
         // cout << "; startXY " << startX << ',' << startY;
-        // cout << endl;
+        // cout << '\n';
 
         // verification verticale puis horizontale
         for (int i = 0; i < blockY; i++) {
             for (int j = 0; j < blockX; j++) {
                 // verifier si il y a collision avec un block
                 if (scene.isSolidTile(startX + j * increment, startY + i)) {
+                    // cout << "toucheX" << '\n';
                     hit = 1;
 
                     // limiter les prochaines verifications a cette distance en tuiles
                     blockX = j;
 
                     // replacement
-                    replacementPosition = (dx > 0 ? ((startX + j) * tileSize) - m_hitbox.w : (startX + j * increment + 1) * tileSize);
+                    replacementPosition = (dx > 0 ? startX + j - m_hitbox.w : startX + j * increment + 1);
                     m_hitbox.x = replacementPosition;
-                    m_position.moveTo(m_hitbox.x + m_hitbox.w / 2, p.second);
+                    m_position.moveTo(m_hitbox.x + m_hitbox.w / 2., p.second);
                 }
             }
         }
@@ -704,34 +722,35 @@ void Entity::moveToWorld (Scene &scene, int dx, int dy, SDL_Renderer *r) {
         }
 
         SDL_SetRenderDrawColor(r, 0, 155, 0, SDL_ALPHA_OPAQUE);
-        debugRect = {movementArea.x - camera.x, movementArea.y - camera.y, movementArea.w, movementArea.h};
-        SDL_RenderFillRect(r, &debugRect);
+        debugRect = {movementArea.x * tileSize - camera.x, movementArea.y * tileSize - camera.y, movementArea.w * tileSize, movementArea.h * tileSize};
+        SDL_RenderFillRectF(r, &debugRect);
 
         hit = 0;
         increment = dy > 0 ? 1 : -1;
 
-        blockX = movementArea.w / tileSize + 1;
-        blockY = movementArea.h / tileSize + 1;
+        blockX = (int)movementArea.w + 1;
+        blockY = (int)movementArea.h + 1;
 
-        blockX += m_hitbox.x % tileSize == 0 ? -1 : 0;
+        blockX += floor(m_hitbox.x) == m_hitbox.x ? -1 : 0;
 
-        startX = m_hitbox.x / tileSize;
-        startY = dy > 0 ? (m_hitbox.y + m_hitbox.h + 1) / tileSize : (m_hitbox.y - 1) / tileSize;
+        startX = (int)m_hitbox.x;
+        startY = dy > 0 ? (int)(m_hitbox.y + m_hitbox.h + .1) : (int)(m_hitbox.y);
 
         // cout << "blocXY " << blockX << ',' << blockY;
         // cout << "; startXY " << startX << ',' << startY;
-        // cout << endl;
+        // cout << '\n';
 
         // Verification horizontale puis verticale
         for (int i = 0; i < blockX; i++) {
             for (int j = 0; j < blockY; j++) {
                 if (scene.isSolidTile(startX + i, startY + j * increment)) {
+                    // cout << "toucheY" << '\n';
                     hit = 1;
                     blockY = j;
 
-                    replacementPosition = dy > 0 ? ((startY + j) * tileSize) - m_hitbox.h : (startY + j * increment + 1) * tileSize;
+                    replacementPosition = dy > 0 ? startY + j - m_hitbox.h : startY + j * increment + 1;
                     m_hitbox.y = replacementPosition;
-                    m_position.moveTo(p.first, m_hitbox.y + m_hitbox.h / 2);
+                    m_position.moveTo(p.first, m_hitbox.y + m_hitbox.h / 2.);
                 }
             }
         }
@@ -743,15 +762,15 @@ void Entity::moveToWorld (Scene &scene, int dx, int dy, SDL_Renderer *r) {
     }
 
     // touche le sol une fois replace ?
-    if (hit && (scene.isInsideMap(m_hitbox.x, m_hitbox.y + m_hitbox.h) || scene.isInsideMap(m_hitbox.x + m_hitbox.w - 1, m_hitbox.y + m_hitbox.h))) {
+    if (hit && (scene.isInsideMap(m_hitbox.x, m_hitbox.y + m_hitbox.h) || scene.isInsideMap(m_hitbox.x + m_hitbox.w - 0.01, m_hitbox.y + m_hitbox.h))) {
         m_touchGround = 1;
         m_flightTime = 0;
     } else m_touchGround = 0;
 
-    if (dx || dy) {
-        p = m_position.getCoords();
-        m_tilePosition.setCoords(p.first / tileSize, p.second / tileSize);
-    }
+    // if (dx || dy) {
+    //     p = m_position.getCoords();
+    //     m_tilePosition.setCoords((int)(p.first), (int)(p.second));
+    // }
 }
 
 /**
@@ -760,7 +779,7 @@ void Entity::moveToWorld (Scene &scene, int dx, int dy, SDL_Renderer *r) {
  * @brief verifie si l'entite est presente sur la camera
 */
 void Entity::checkIfVisible (SDL_Rect &camera, int tileSize) {
-    if (m_hitbox.x + m_hitbox.w - camera.x > 0 && m_hitbox.x - camera.x < camera.w + tileSize && m_hitbox.y + m_hitbox.h - camera.y > 0 && m_hitbox.y - camera.y < camera.h + tileSize) {
+    if ((m_hitbox.x + m_hitbox.w) * tileSize - camera.x > 0 && m_hitbox.x * tileSize - camera.x < camera.w + tileSize && (m_hitbox.y + m_hitbox.h) * tileSize - camera.y > 0 && m_hitbox.y * tileSize - camera.y < camera.h + tileSize) {
         m_visible = true;
     } else {
         m_visible = false;
@@ -819,8 +838,8 @@ ShowEntity::ShowEntity (SDL_Renderer *renderer, Scene *scene, std::vector<SDL_Te
  * @brief foncteur d'affichage des entites
 */
 void ShowEntity::operator() (Entity &e) {
-    if (e.isVisible())
-        e.show(m_renderer, m_scene->getCameraPos(), *m_entityTextures);
+    // if (e.isVisible())
+        // e.show(m_renderer, m_scene->getCameraPos(), *m_entityTextures);
 }
 
 
