@@ -51,6 +51,8 @@ enum TextAlign {Left, Right, Center, Justify};
 
 enum InteractionType {None, Talk};
 
+enum CameraMode {Free, Locked, TargetEntity};
+
 // Converti en classes enfantes de Entity
 // enum EntityType {Mob, Block, ItemDrop};
 
