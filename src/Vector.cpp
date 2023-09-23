@@ -70,7 +70,7 @@ void Vector2D::moveBy (float x, float y) {
     calculateNorm();
 }
 
-void Vector2D::moveBy (Vector2D vector) {
+void Vector2D::moveBy (const Vector2D &vector) {
     m_x += vector.m_x;
     m_y += vector.m_y;
     calculateAngle();
@@ -80,6 +80,13 @@ void Vector2D::moveBy (Vector2D vector) {
 void Vector2D::moveTo (float x, float y) {
     m_x = x;
     m_y = y;
+    calculateAngle();
+    calculateNorm();
+}
+
+void Vector2D::moveTo (const Vector2D &vector) {
+    m_x = vector.m_x;
+    m_y = vector.m_y;
     calculateAngle();
     calculateNorm();
 }

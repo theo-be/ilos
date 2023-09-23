@@ -20,7 +20,8 @@ class Vector2D {
     void moveTo (float x, float y);
     void moveBy (float x, float y);
 
-    void moveBy (Vector2D vector);
+    void moveBy (const Vector2D &vector);
+    void moveTo (const Vector2D &vector);
 
     // void scaleTo (float scale);
     void scaleBy (float scale);
