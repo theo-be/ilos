@@ -18,7 +18,7 @@
 
 using namespace std;
 
-Scene::Scene () : m_mapWidth(0), m_mapHeight(0), m_camera({0, 0, WINDOW_WIDTH, WINDOW_HEIGHT}), m_renderer(nullptr), m_player(nullptr), m_tileSize(TILE_SIZE), m_windowWidth(WINDOW_WIDTH), m_windowHeight(WINDOW_HEIGHT)
+Scene::Scene () : m_mapWidth(0), m_mapHeight(0), m_cameraRect({0, 0, WINDOW_WIDTH, WINDOW_HEIGHT}), m_renderer(nullptr), m_player(nullptr), m_tileSize(TILE_SIZE), m_windowWidth(WINDOW_WIDTH), m_windowHeight(WINDOW_HEIGHT)
 {
     m_mapRenderWidth = m_windowWidth / m_tileSize + 1;
     m_mapRenderHeight = m_windowHeight / m_tileSize + 1;
@@ -48,13 +48,18 @@ Scene::Scene () : m_mapWidth(0), m_mapHeight(0), m_camera({0, 0, WINDOW_WIDTH, W
     m_player = new Player;
     initPlayer();
 
+    // m_camera = new Camera(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+    m_camera = new Camera(0, 0, 40., 22.5, WINDOW_WIDTH, WINDOW_HEIGHT, m_renderer);
+
     m_showEntities = new ShowEntity(m_renderer, this, m_mobEntityTextures);
+
+
     
     m_collisionIdArray[0] = 2;
     m_collisionIdArray[1] = 3;
 }
 
-Scene::Scene(SDL_Renderer *renderer) : m_mapWidth(0), m_mapHeight(0), m_camera({0, 0, WINDOW_WIDTH, WINDOW_HEIGHT}), m_renderer(renderer), m_tileSize(TILE_SIZE), m_windowWidth(WINDOW_WIDTH), m_windowHeight(WINDOW_HEIGHT)
+Scene::Scene(SDL_Renderer *renderer) : m_mapWidth(0), m_mapHeight(0), m_cameraRect({0, 0, WINDOW_WIDTH, WINDOW_HEIGHT}), m_renderer(renderer), m_tileSize(TILE_SIZE), m_windowWidth(WINDOW_WIDTH), m_windowHeight(WINDOW_HEIGHT)
 {
     m_mapRenderWidth = m_windowWidth / m_tileSize + 1;
     m_mapRenderHeight = m_windowHeight / m_tileSize + 1;
@@ -80,6 +85,9 @@ Scene::Scene(SDL_Renderer *renderer) : m_mapWidth(0), m_mapHeight(0), m_camera({
     m_mobEntityTextures->clear();
     m_blockEntityTextures->clear();
     m_itemDropEntityTextures->clear();
+    
+    // m_camera = new Camera(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+    m_camera = new Camera(0, 0, 40., 22.5, WINDOW_WIDTH, WINDOW_HEIGHT, m_renderer);
 
     m_player = new Player;
     initPlayer();
@@ -98,6 +106,7 @@ Scene::~Scene () {
     m_blockEntityList->clear();
     delete m_map;
     delete m_tiles;
+    delete m_camera;
     delete m_mobList;
     delete m_blockEntityList;
     delete m_itemDropList;
@@ -120,12 +129,20 @@ list<Entity> *Scene::getItemDropList() const {
     return m_itemDropList;
 }
 
+const std::vector<std::vector<int>> *Scene::getMap () const {
+    return m_map;
+}
+
 Player *Scene::getPlayer () const {
     return m_player;
 }
 
 std::vector<SDL_Texture*> *Scene::getMobEntityTextures () const {
     return m_mobEntityTextures;
+}
+
+Camera *Scene::getCamera () const {
+    return m_camera;
 }
 
 int Scene::getTileSize () const {
@@ -258,6 +275,9 @@ int Scene::loadMobEntities () {
     string fileName = "data/entities/entities";
     string entityName = "";
     int value;
+    Vector2D v;
+    float posX = 0.;
+    float posY = 0.;
     // stringstream stream;
     file.open(fileName);
     if (!file) cerr << "ERREUR ouverture " << fileName << endl;
@@ -289,9 +309,13 @@ int Scene::loadMobEntities () {
         e.setPassive(value);
         file >> value;
         e.setTextureId(value);
+        posX = h.x + h.w / 2.;
+        posY = h.y + h.h / 2.;
+        v.setCoords(posX, posY);
+        e.setPosition(v);
         m_mobList->push_front(e);
         Entity::increaseCount();
-        cout << entityName << endl;
+        // cout << entityName << endl;
         entityName = "DEFAULT";
     }
 
@@ -430,38 +454,57 @@ void Scene::doActions (bool left, bool right, bool up, bool down, unsigned int d
  * @brief Deplace la camera vers l'entite cible
 */
 void Scene::moveCamera (const Entity &target) {
+
+    // ancien systeme de camera
+
     SDL_FRect hitbox = target.getHitbox();
     SDL_FRect screenPosition;
 
-    screenPosition.x = hitbox.x * m_tileSize - m_camera.x;
-    screenPosition.y = hitbox.y * m_tileSize - m_camera.y;
+    screenPosition.x = hitbox.x * m_tileSize - m_cameraRect.x;
+    screenPosition.y = hitbox.y * m_tileSize - m_cameraRect.y;
     screenPosition.w = hitbox.w * m_tileSize;
     screenPosition.h = hitbox.h * m_tileSize;
 
     // droite
     if (screenPosition.x + screenPosition.w > m_maxAreaWidth) {
-        m_camera.x = hitbox.x * m_tileSize - m_maxAreaWidth;
+        m_cameraRect.x = hitbox.x * m_tileSize - m_maxAreaWidth;
     }
     // gauche
     else if (screenPosition.x < m_mapRenderWidth - m_maxAreaWidth) {
-        m_camera.x = hitbox.x  * m_tileSize- (m_mapRenderWidth * m_tileSize - m_maxAreaWidth);
+        m_cameraRect.x = hitbox.x  * m_tileSize- (m_mapRenderWidth * m_tileSize - m_maxAreaWidth);
     }
 
     // bas
     if (screenPosition.y + screenPosition.h > m_maxAreaHeight) {
-        m_camera.y = hitbox.y * m_tileSize - m_maxAreaHeight;
+        m_cameraRect.y = hitbox.y * m_tileSize - m_maxAreaHeight;
     }
     // haut
     else if (screenPosition.y < m_mapRenderHeight - m_maxAreaHeight) {
-        m_camera.y = hitbox.y * m_tileSize - (m_mapRenderHeight * m_tileSize - m_maxAreaHeight);
+        m_cameraRect.y = hitbox.y * m_tileSize - (m_mapRenderHeight * m_tileSize - m_maxAreaHeight);
     }
 
-    m_camera.x = min<int>(max<int>(m_camera.x, 0), (m_mapWidth - m_mapRenderWidth + 1) * m_tileSize);
-    m_camera.y = min<int>(max<int>(m_camera.y, 0), (m_mapHeight - m_mapRenderHeight + 1) * m_tileSize);
+    m_cameraRect.x = min<int>(max<int>(m_cameraRect.x, 0), (m_mapWidth - m_mapRenderWidth + 1) * m_tileSize);
+    m_cameraRect.y = min<int>(max<int>(m_cameraRect.y, 0), (m_mapHeight - m_mapRenderHeight + 1) * m_tileSize);
 
     for (std::list<Entity>::iterator it = m_mobList->begin(); it != m_mobList->end(); it++) {
-        (*it).checkIfVisible(m_camera, m_tileSize);
+        (*it).checkIfVisible(m_cameraRect, m_tileSize);
     }
+
+
+    // nouveau systeme de camera
+
+    // float tileSize = m_camera->getTileSize();
+    // pair<float, float> playerPosition = target.getPosition().getCoords();
+
+    // SDL_Point positionOnScreen = {
+    //     playerPosition.first * tileSize,
+    //     playerPosition.second * tileSize
+    // };
+
+    pair<float, float> eCoords = target.getPosition().getCoords();
+    m_camera->moveTo(eCoords.first, eCoords.second);
+
+
 }
 
 
@@ -536,18 +579,18 @@ pair<int, int> Scene::getMapDim () const {
  * @brief retourne la position de la camera
 */
 SDL_Rect Scene::getCameraPos () const {
-    return m_camera;
+    return m_cameraRect;
 }
 
 /**
  * @fn void Scene::setCameraPos (int x, int y)
  * @param x position x
- * @param x position x
+ * @param y position y
  * @brief deplace la camera
 */
 void Scene::setCameraPos (int x, int y) {
-    m_camera.x = x;
-    m_camera.y = y;
+    m_cameraRect.x = x;
+    m_cameraRect.y = y;
 }
 
 
@@ -559,11 +602,14 @@ void Scene::setCameraPos (int x, int y) {
 void Scene::displayScene () const {
     displayMap();
     // for_each(m_mobList->begin(), m_mobList->end(), *m_showEntities);
-    for (std::list<Entity>::iterator it = m_mobList->begin(); it != m_mobList->end(); it++) {
-        if ((*it).isVisible())
-            (*it).show(m_renderer, m_camera, m_tileSize, *m_mobEntityTextures);
-    }
-    m_player->getTarget()->show(m_renderer, m_camera, m_tileSize, *m_mobEntityTextures);
+    // for (std::list<Entity>::iterator it = m_mobList->begin(); it != m_mobList->end(); it++) {
+    //     if ((*it).isVisible())
+    //         (*it).show(m_renderer, m_cameraRect, m_tileSize, *m_mobEntityTextures);
+    // }
+    // m_player->getTarget()->show(m_renderer, m_cameraRect, m_tileSize, *m_mobEntityTextures);
+
+    m_camera->drawE(m_renderer, m_mobList, m_mobEntityTextures);
+
 }
 
 /**
@@ -572,21 +618,23 @@ void Scene::displayScene () const {
  * @brief affiche la carte
 */
 void Scene::displayMap () const {
+/* 
+    // ancien systeme
     SDL_Rect rect = {0, 0, m_tileSize, m_tileSize};
     int x1 = 0, x2 = 0, y1 = 0, y2 = 0, mx = 0, my = 0;
 
     // coordonees reelles de la zone de rendu
 
     // reste de la division, on veut commencer en dehors de l'ecran
-    x1 = m_camera.x % m_tileSize * -1;
+    x1 = m_cameraRect.x % m_tileSize * -1;
     x2 = x1 + m_mapRenderWidth * m_tileSize + (x1 == 0 ? 0 : m_tileSize);
 
     // reste de la division, on veut commencer en dehors de l'ecran
-    y1 = m_camera.y % m_tileSize * -1;
+    y1 = m_cameraRect.y % m_tileSize * -1;
     y2 = y1 + m_mapRenderHeight * m_tileSize + (y1 == 0 ? 0 : m_tileSize);
 
-    mx = m_camera.x / m_tileSize;
-    my = m_camera.y / m_tileSize;
+    mx = m_cameraRect.x / m_tileSize;
+    my = m_cameraRect.y / m_tileSize;
 
     for (int y = y1; y < y2; y+= m_tileSize) {
         for (int x = x1; x < x2; x += m_tileSize) {
@@ -600,9 +648,16 @@ void Scene::displayMap () const {
             }
             mx++;
         }
-        mx = m_camera.x / m_tileSize;
+        mx = m_cameraRect.x / m_tileSize;
         my++;
     }
+ */
+
+    // nouveau systeme
+
+    m_camera->draw(m_renderer, m_tiles, m_map);
+
+
 }
 
 

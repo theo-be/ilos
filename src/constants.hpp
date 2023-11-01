@@ -14,7 +14,7 @@
 
 #define TILE_SIZE 32
 
-#define TILES_TEXTURE_COUNT 4
+#define TILES_TEXTURE_COUNT 5
 #define ENTITY_TEXTURE_COUNT 4
 
 #define SOLID_TILES_COUNT 2
@@ -51,7 +51,7 @@ enum TextAlign {Left, Right, Center, Justify};
 
 enum InteractionType {None, Talk};
 
-enum CameraMode {Free, Locked, TargetEntity};
+enum CameraMode {Default, Free, Locked, TargetEntity};
 
 // Converti en classes enfantes de Entity
 // enum EntityType {Mob, Block, ItemDrop};

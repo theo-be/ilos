@@ -16,6 +16,7 @@
 class Entity;
 class Player;
 class ShowEntity;
+class Camera;
 
 class Scene {
     public:
@@ -55,6 +56,8 @@ class Scene {
     int getTileAt (int x, int y) const;
     std::pair<int, int> getMapDim () const;
     SDL_Rect getCameraPos () const;
+    Camera *getCamera () const;
+    const std::vector<std::vector<int>> *getMap () const;
     std::list<Entity> *getMobList() const;
     std::list<Entity> *getBlockEntityList() const;
     std::list<Entity> *getItemDropList() const;
@@ -89,8 +92,8 @@ class Scene {
     protected:
     int m_mapWidth;
     int m_mapHeight;
-    SDL_Rect m_camera;
-    // Camera *m_camera;
+    SDL_Rect m_cameraRect; // inutilise
+    Camera *m_camera;
     SDL_Renderer *m_renderer;
     Player *m_player;
     int m_tileSize;
@@ -119,6 +122,8 @@ class Scene {
 
     std::list<Entity*> *m_visibleEntities;
 
+
+    // foncteur inutilise
     ShowEntity *m_showEntities;
     
 };

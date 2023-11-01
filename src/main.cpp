@@ -38,6 +38,7 @@
 #include "entities.hpp"
 #include "Font.hpp"
 #include "Vector.hpp"
+#include "Camera.hpp"
 
 using namespace std;
 
@@ -104,7 +105,17 @@ int main(int argc, char *argv[]) {
     scene.initMap(mapFileName.c_str());
     scene.loadTiles();
 
-    cout << "Scene chargee" << endl;
+    cout << "Scene initialisee" << endl;
+
+
+    /* -------------------------------------------------- */
+    // Initialisation de la camera
+    /* -------------------------------------------------- */
+
+    cout << "Initialisation de la camera" << endl;
+
+    Camera camera(0, 0, 40., 22.5, WINDOW_WIDTH, WINDOW_HEIGHT, renderer);
+
 
     /* -------------------------------------------------- */
     // Initialisation des textures
@@ -116,9 +127,27 @@ int main(int argc, char *argv[]) {
     // loadEntityTextures(renderer, entityTextures);
 
     scene.loadEntityTextures();
+    
+    camera.loadEntityTextures("ressources/entity");
+
+
 
     cout << "Textures des entites chargees" << endl;
 
+    /* -------------------------------------------------- */
+    // Initialisation des textures de la carte
+    /* -------------------------------------------------- */
+
+
+    cout << "Chargement des textures de la carte" << endl;
+
+    camera.loadTilesTextures("ressources/fg");
+
+    cout << "Textures de la carte chargees" << endl;
+
+    cout << "Camera totalement initialisee" << endl;
+
+    
     /* -------------------------------------------------- */
     // Initialisation du joueur
     /* -------------------------------------------------- */
@@ -265,16 +294,24 @@ int main(int argc, char *argv[]) {
 
     SDL_SetRenderDrawColor(renderer, 128, 192, 255, SDL_ALPHA_OPAQUE);
     SDL_RenderClear(renderer);
-    scene.moveCamera(*scene.getPlayer()->getTarget());
-    scene.displayScene();
+
+    // scene.moveCamera(*scene.getPlayer()->getTarget());
+    // scene.displayScene();
+
+    
+    camera.lockTo(*scene.getPlayer()->getTarget());
+    camera.displayMap(scene.getMap());
+    camera.displayEntities(scene.getMobList());
 
     // SDL_Delay(500);
+
 
     /* -------------------------------------------------- */
     // Debut de la boucle infinie
     /* -------------------------------------------------- */
 
     while (programLaunched) {
+
 
         frameBegin = chrono::steady_clock::now();
 
@@ -293,6 +330,7 @@ int main(int argc, char *argv[]) {
         /* Debut des evenements ------------------------------------------- */
 
         SDL_Event event;
+        int w, h;
 
         while (SDL_PollEvent(&event)) {
             switch (event.type) {
@@ -328,10 +366,11 @@ int main(int argc, char *argv[]) {
                             programLaunched = false;
                             break;
                         case SDLK_KP_MINUS:
-                            scene.decreaseTileSize();
+                            camera.setWindowDimension(WINDOW_WIDTH, WINDOW_HEIGHT);
                             break;
                         case SDLK_KP_PLUS:
-                            scene.increaseTileSize();
+                            SDL_GetWindowSize(window, &w, &h);
+                            camera.setWindowDimension(w, h);
                             break;
                         default:
                             break;
@@ -378,7 +417,8 @@ int main(int argc, char *argv[]) {
                             showEntityList(scene.getMobList());
                             break;
                         case SDLK_m:
-                            scene.moveCamera(*scene.getPlayer()->getTarget());
+                            // scene.moveCamera(*scene.getPlayer()->getTarget());
+                            
                             break;
                         case SDLK_n:
                             SDL_Delay(200);
@@ -439,7 +479,13 @@ int main(int argc, char *argv[]) {
 
 
 
-            scene.displayScene();
+            // scene.displayScene();
+
+            camera.update();
+
+            camera.displayMap(scene.getMap());
+            camera.displayEntities(scene.getMobList());
+            
 
             // Affichage de la carte
             // scene.displayMap();
@@ -470,15 +516,16 @@ int main(int argc, char *argv[]) {
             SDL_FRect r = scene.getPlayer()->getTarget()->getHitbox();
             pair<float, float> pos = target->getPosition().getCoords();
             pair<float, float> v = target->getVelocity().getCoords();
-            pair<float, float> v0 = target->getVelocity0().getCoords();
+            // pair<float, float> v0 = target->getVelocity0().getCoords();
             pair<float, float> a = target->getAcceleration().getCoords();
             pair<int, int> mapDim = scene.getMapDim();
-            SDL_Rect camera = scene.getCameraPos();
+            // SDL_Rect camera = scene.getCameraPos();
+            pair<float,float> campos = scene.getCamera()->getPosition().getCoords();
 
 
             // INFORMATIONS SUR LE MONDE
             SDL_Rect bg = {0, 0, 300, 160};
-            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 100);
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 125);
             SDL_RenderFillRect(renderer, &bg);
 
             // IPS
@@ -501,11 +548,6 @@ int main(int argc, char *argv[]) {
             toStringConvertor << "taille carte : " << mapDim.first << " x " << mapDim.second;
             p.y += FONT_SIZE_INTERFACE;
             font.displayText(toStringConvertor.str().c_str(), p.x, p.y);
-            // POSITION CAMERA
-            toStringConvertor.str("");
-            toStringConvertor << "Position de la caméra : " << camera.x << " x " << camera.y;
-            p.y += FONT_SIZE_INTERFACE;
-            font.displayText(toStringConvertor.str().c_str(), p.x, p.y);
             // TAILLE DE TUILE
             toStringConvertor.str("");
             toStringConvertor << "taille tuile : " << scene.getTileSize() << "px";
@@ -526,11 +568,16 @@ int main(int argc, char *argv[]) {
             toStringConvertor << "temps total : " << (renderingTimeDT + computationTimeDT) * 1000 << "ms";
             p.y += FONT_SIZE_INTERFACE;
             font.displayText(toStringConvertor.str().c_str(), p.x, p.y);
+            // POSITION DE LA CAM
+            toStringConvertor.str("");
+            toStringConvertor << "Position de la caméra : " << campos.first << "x" << campos.second << "y";
+            p.y += FONT_SIZE_INTERFACE;
+            font.displayText(toStringConvertor.str().c_str(), p.x, p.y);
 
             bg.w = 260;
             bg.x = WINDOW_WIDTH - bg.w;
             bg.h = 260;
-            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 100);
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 125);
             SDL_RenderFillRect(renderer, &bg);
             
             // INFORMATIONS DU JOUEUR
@@ -585,11 +632,11 @@ int main(int argc, char *argv[]) {
             toStringConvertor << "Vitesse : " << v.first << "x " << v.second << "y";
             p.y += FONT_SIZE_INTERFACE;
             font.displayText(toStringConvertor.str().c_str(), p.x, p.y, Right);
-            // VITESSE 0
-            toStringConvertor.str("");
-            toStringConvertor << "Vitesse0 : " << v0.first << "x " << v0.second << "y";
-            p.y += FONT_SIZE_INTERFACE;
-            font.displayText(toStringConvertor.str().c_str(), p.x, p.y, Right);
+            // // VITESSE 0
+            // toStringConvertor.str("");
+            // toStringConvertor << "Vitesse0 : " << v0.first << "x " << v0.second << "y";
+            // p.y += FONT_SIZE_INTERFACE;
+            // font.displayText(toStringConvertor.str().c_str(), p.x, p.y, Right);
             // ACCELERATION
             toStringConvertor.str("");
             toStringConvertor << "Acceleration : " << a.first << "x " << a.second << "y";

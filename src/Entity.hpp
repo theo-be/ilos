@@ -159,6 +159,7 @@ bool operator!= (Entity const &a, Entity const &b);
 
 
 // foncteur
+// inutilise 
 class ShowEntity {
     public:
     ShowEntity (SDL_Renderer *renderer, Scene *scene, std::vector<SDL_Texture*> *entityTextures);

@@ -836,6 +836,8 @@ ShowEntity::ShowEntity (SDL_Renderer *renderer, Scene *scene, std::vector<SDL_Te
  * @fn void ShowEntity::operator() (Entity &e)
  * @param e entite
  * @brief foncteur d'affichage des entites
+ * @remark inutilise, voir Scene::displayScene
+ * @see Scene::displayScene
 */
 void ShowEntity::operator() (Entity &e) {
     // if (e.isVisible())
