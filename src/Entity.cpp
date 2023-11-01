@@ -634,15 +634,15 @@ void Entity::move (Scene &scene, bool left, bool right, bool up, bool down, unsi
 */
 void Entity::moveToWorld (Scene &scene, float dx, float dy, SDL_Renderer *r) {
 
-    int tileSize = scene.getTileSize();
+    // int tileSize = scene.getTileSize();
     pair<float, float> p = m_position.getCoords();
     // pair<float, float> v = m_velocity.getCoords();
     // pair<float, float> a = m_acceleration.getCoords();
 
-    SDL_Rect camera = scene.getCameraPos();
+    // SDL_Rect camera = scene.getCameraPos();
 
     SDL_FRect movementArea = {0};
-    SDL_FRect debugRect = {0};
+    // SDL_FRect debugRect = {0};
 
     bool hit;
     float replacementPosition = 0;
@@ -666,9 +666,9 @@ void Entity::moveToWorld (Scene &scene, float dx, float dy, SDL_Renderer *r) {
             movementArea = {m_hitbox.x + m_hitbox.w, m_hitbox.y, dx, m_hitbox.h};
         }
 
-        SDL_SetRenderDrawColor(r, 255, 0, 0, SDL_ALPHA_OPAQUE);
-        debugRect = {movementArea.x * tileSize - camera.x, movementArea.y * tileSize - camera.y, movementArea.w * tileSize, movementArea.h * tileSize};
-        SDL_RenderFillRectF(r, &debugRect);
+        // SDL_SetRenderDrawColor(r, 255, 0, 0, SDL_ALPHA_OPAQUE);
+        // debugRect = {movementArea.x * tileSize - camera.x, movementArea.y * tileSize - camera.y, movementArea.w * tileSize, movementArea.h * tileSize};
+        // SDL_RenderFillRectF(r, &debugRect);
 
         // Verification des collisions
 
@@ -721,9 +721,9 @@ void Entity::moveToWorld (Scene &scene, float dx, float dy, SDL_Renderer *r) {
             movementArea = {m_hitbox.x, m_hitbox.y + m_hitbox.h, m_hitbox.w, dy};
         }
 
-        SDL_SetRenderDrawColor(r, 0, 155, 0, SDL_ALPHA_OPAQUE);
-        debugRect = {movementArea.x * tileSize - camera.x, movementArea.y * tileSize - camera.y, movementArea.w * tileSize, movementArea.h * tileSize};
-        SDL_RenderFillRectF(r, &debugRect);
+        // SDL_SetRenderDrawColor(r, 0, 155, 0, SDL_ALPHA_OPAQUE);
+        // debugRect = {movementArea.x * tileSize - camera.x, movementArea.y * tileSize - camera.y, movementArea.w * tileSize, movementArea.h * tileSize};
+        // SDL_RenderFillRectF(r, &debugRect);
 
         hit = 0;
         increment = dy > 0 ? 1 : -1;
