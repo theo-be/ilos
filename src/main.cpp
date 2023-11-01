@@ -1,6 +1,6 @@
 /** 
  * @file main.cpp
- * @version 0.4
+ * @version 0.5
  * @date 25/08/2022 Debut du projet
  * @brief Fichier principal du projet
 */
@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
     ostringstream ostr;
     ostr << "SDL v" << (int)v.major << "." << (int)v.minor << "." << (int)v.patch;
     cout << ostr.str() << endl;
-    string gameVersion = "ilos v0.4";
+    string gameVersion = "ilos v0.5";
     cout << gameVersion << endl;
     
     int exitStatus = EXIT_FAILURE;
