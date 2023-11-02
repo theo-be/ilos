@@ -47,8 +47,7 @@ int main(int argc, char *argv[]) {
     // version SDL
     SDL_version v;
     SDL_VERSION(&v);
-    
-    string strver;
+
     ostringstream ostr;
     ostr << "SDL v" << (int)v.major << "." << (int)v.minor << "." << (int)v.patch;
     cout << ostr.str() << endl;
@@ -231,6 +230,9 @@ int main(int argc, char *argv[]) {
     // SDL_Delay(50);
 
     bool debug = true;
+    
+    // utilise pour la taille de la fenetre
+    int w, h;
 
     int up = 0, down = 0, left = 0, right = 0;
 
@@ -330,7 +332,6 @@ int main(int argc, char *argv[]) {
         /* Debut des evenements ------------------------------------------- */
 
         SDL_Event event;
-        int w, h;
 
         while (SDL_PollEvent(&event)) {
             switch (event.type) {
@@ -366,7 +367,7 @@ int main(int argc, char *argv[]) {
                             programLaunched = false;
                             break;
                         case SDLK_KP_MINUS:
-                            camera.setWindowDimension(WINDOW_WIDTH, WINDOW_HEIGHT);
+                            SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
                             break;
                         case SDLK_KP_PLUS:
                             SDL_GetWindowSize(window, &w, &h);
@@ -434,6 +435,16 @@ int main(int argc, char *argv[]) {
                         default:
                             break;
                     }
+                    break;
+
+                case SDL_MOUSEBUTTONDOWN:
+                    break;
+                case SDL_MOUSEBUTTONUP:
+                    break;
+
+                case SDL_WINDOWEVENT:
+                    SDL_GetWindowSize(window, &w, &h);
+                    camera.setWindowDimension(w, h);
                     break;
                 default:
                     break;
@@ -525,7 +536,7 @@ int main(int argc, char *argv[]) {
 
             // INFORMATIONS SUR LE MONDE
             SDL_Rect bg = {0, 0, 300, 160};
-            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 125);
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
             SDL_RenderFillRect(renderer, &bg);
 
             // IPS
@@ -577,7 +588,7 @@ int main(int argc, char *argv[]) {
             bg.w = 260;
             bg.x = WINDOW_WIDTH - bg.w;
             bg.h = 260;
-            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 125);
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
             SDL_RenderFillRect(renderer, &bg);
             
             // INFORMATIONS DU JOUEUR
@@ -733,10 +744,12 @@ int main(int argc, char *argv[]) {
     cout << "Dechargement des textures" << endl;
 
     scene.unloadTiles();
+    camera.unloadTilesTextures();
 
     cout << "Tuiles dechargees" << endl;
 
     scene.unloadEntityTextures();
+    camera.unloadEntityTextures();
     // unloadEntityTextures(entityTextures);
 
     cout << "Textures des entites dechargees" << endl;

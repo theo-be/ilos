@@ -18,6 +18,10 @@ class Player;
 class ShowEntity;
 class Camera;
 
+/**
+ * @class Scene
+ * @brief Classe responsable de la scene
+*/
 class Scene {
     public:
     Scene ();

@@ -11,6 +11,10 @@
 
 class Entity;
 
+/**
+ * @class Camera
+ * @brief Classe responsable de l'affichage de la scene sur l'ecran
+*/
 class Camera {
 
     public:

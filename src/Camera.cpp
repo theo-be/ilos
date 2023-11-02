@@ -23,11 +23,6 @@ vector<SDL_Texture*> *Camera::m_tiles = nullptr;
 vector<SDL_Texture*> *Camera::m_mobEntityTextures = nullptr;
 
 
-// Camera::Camera (float x, float y, float w, float h) : m_position(x, y), m_screenWidth(w), m_screenHeight(h), m_zoom(1.)
-// {
-//     // m_tileSize = TILE_SIZE;
-// }
-
 Camera::Camera (float x, float y, float sceneWidth, float sceneHeight, float windowWidth, float windowHeight, SDL_Renderer *renderer) : m_position(x, y), m_sceneWidth(sceneWidth), m_sceneHeight(sceneHeight), m_screenWidth(windowWidth), m_screenHeight(windowHeight)
 {
     m_tileSize = m_screenWidth / m_sceneWidth;
@@ -40,10 +35,20 @@ Camera::Camera (float x, float y, float sceneWidth, float sceneHeight, float win
     m_lockedY = 0;
 }
 
+/**
+ * @fn const Vector2D Camera::getPosition () const
+ * @returns La position de la camera sur la scene
+ * @brief Donne la position de la camera sur la scene
+*/
 const Vector2D Camera::getPosition () const {
     return m_position;
 }
 
+/**
+ * @fn const SDL_FRect Camera::getBoundingBox () const
+ * @returns L'aire couverte par la camera
+ * @brief Donne l'aire couverte par la camera
+*/
 const SDL_FRect Camera::getBoundingBox () const {
     pair<float, float> camCoords = m_position.getCoords();
     SDL_FRect boundingBox = {
@@ -55,10 +60,17 @@ const SDL_FRect Camera::getBoundingBox () const {
     return boundingBox;
 }
 
+
+// ???
 float Camera::getTileSize () const {
     return m_tileSize * m_zoom;
 }
 
+/**
+ * @fn void Camera::moveBy (const Vector2D &vector)
+ * @param vector Vecteur de deplacement
+ * @brief Decale la camera de vector
+*/
 void Camera::moveBy (const Vector2D &vector) {
     if (m_cameraMode == Free) {
         m_position.moveBy(vector);
@@ -78,6 +90,12 @@ void Camera::moveBy (const Vector2D &vector) {
     // m_boundingBox.y += y;
 }
 
+/**
+ * @fn void Camera::moveTo (float x, float y)
+ * @param x Position x
+ * @param y Position y
+ * @brief Deplace la camera vers un point de la carte
+*/
 void Camera::moveTo (float x, float y) {
     m_position.moveTo(x, y);
     // m_boundingBox.x = x - m_boundingBox.w / 2;
@@ -90,6 +108,10 @@ void Camera::move () {
 
 }
 
+/**
+ * @fn void Camera::snapToMap ()
+ * @brief Verifie si l'aire de la camera est integralement sur la carte, la camera est deplacee si besoin
+*/
 void Camera::snapToMap () {
     pair<float, float> camCoords = m_position.getCoords();
     if (camCoords.first - m_sceneWidth / 2. < 0) {
@@ -107,6 +129,11 @@ void Camera::snapToMap () {
     m_position.moveTo(camCoords.first, camCoords.second);
 }
 
+/**
+ * @fn void Camera::centerToTarget ()
+ * @brief Centre la camera sur l'entite cible
+ * @see Camera::lockTo
+*/
 void Camera::centerToTarget () {
     pair<float, float> ePos = m_target->getPosition().getCoords();
     pair<float, float> camPos = m_position.getCoords();
@@ -128,27 +155,60 @@ void Camera::setMode (CameraMode mode) {
     m_cameraMode = mode;
 }
 
+/**
+ * @fn void Camera::lock ()
+ * @brief Bloque la camera sur la scene
+*/
 void Camera::lock () {
     m_cameraMode = Locked;
 }
+
+/**
+ * @fn void Camera::lockX ()
+ * @brief Bloque la camera sur l'axe X
+*/
 void Camera::lockX () {
     m_lockedX = true;
 }
+
+/**
+ * @fn void Camera::lockY ()
+ * @brief Bloque la camera sur l'axe Y
+*/
 void Camera::lockY () {
     m_lockedY = true;
 }
 
+
+/**
+ * @fn void Camera::unlock ()
+ * @brief Debloque la camera
+*/
 void Camera::unlock () {
     m_cameraMode = Free;
 }
+
+/**
+ * @fn void Camera::unlockX ()
+ * @brief Debloque la camera sur l'axe X
+*/
 void Camera::unlockX () {
     m_lockedX = false;
 }
+
+/**
+ * @fn void Camera::unlockY ()
+ * @brief Debloque la camera sur l'axe Y
+*/
 void Camera::unlockY () {
     m_lockedY = false;
 }
 
-
+/**
+ * @fn void Camera::lockTo (Entity &entity)
+ * @param entity Entite a suivre
+ * @brief Definit l'entite comme cible a suivre
+*/
 void Camera::lockTo (Entity &entity) {
     m_cameraMode = TargetEntity;
     m_target = &entity;
@@ -156,8 +216,12 @@ void Camera::lockTo (Entity &entity) {
     
 }
 
-
-
+/**
+ * @fn void Camera::setWindowDimension (int width, int height)
+ * @param width Largeur
+ * @param height Hauteur
+ * @brief Definit la dimension de la fenetre
+*/
 void Camera::setWindowDimension (int width, int height) {
     m_screenWidth = width;
     m_screenHeight = height;
@@ -165,6 +229,12 @@ void Camera::setWindowDimension (int width, int height) {
     snapToMap();
 }
 
+/**
+ * @fn void Camera::setSceneDimension (float width, float height)
+ * @param width Largeur
+ * @param height Hauteur
+ * @brief Definit la dimension de la camera sur la scene
+*/
 void Camera::setSceneDimension (float width, float height) {
     m_sceneWidth = width;
     m_sceneHeight = height;
@@ -172,10 +242,14 @@ void Camera::setSceneDimension (float width, float height) {
     snapToMap();
 }
 
+/**
+ * @fn void Camera::update ()
+ * @brief Met a jour les informations de la camera (par ex : sa position sur l'entite a suivre, etc.)
+*/
 void Camera::update () {
     // objectif : mettre a jour tout sur la cam directement
-
-    centerToTarget();
+    if (m_cameraMode == TargetEntity)
+        centerToTarget();
 
 }
 
@@ -183,6 +257,11 @@ void Camera::update () {
 
 // Methodes statiques
 
+/**
+ * @fn void Camera::loadEntityTextures (const char *fileName)
+ * @param fileName Patterne du fichier source
+ * @brief Charge les textures des entites
+*/
 void Camera::loadEntityTextures (const char *fileName) {
     // m_mobEntityTextures->resize(ENTITY_TEXTURE_COUNT + 1);
     string tileFile = "";
@@ -205,6 +284,11 @@ void Camera::loadEntityTextures (const char *fileName) {
 
 }
 
+/**
+ * @fn void Camera::loadTilesTextures (const char *fileName)
+ * @param fileName Patterne du fichier source
+ * @brief Charge les textures des tuiles de la carte
+*/
 void Camera::loadTilesTextures (const char *fileName) {
     // m_tiles->resize(TILES_TEXTURE_COUNT + 1);
     string tileFile = "";
@@ -223,17 +307,35 @@ void Camera::loadTilesTextures (const char *fileName) {
     }
 }
 
+/**
+ * @fn void Camera::unloadEntityTextures ()
+ * @brief Decharge les textures des entites
+*/
 void Camera::unloadEntityTextures () {
+    for (int i = 0; i < ENTITY_TEXTURE_COUNT; i++) {
+        SDL_DestroyTexture(m_mobEntityTextures->at(i));
+    }
     delete m_mobEntityTextures;
 }
 
+/**
+ * @fn void Camera::unloadTilesTextures ()
+ * @brief Decharge les textures des tuiles
+*/
 void Camera::unloadTilesTextures () {
+    for (int i = 0; i < TILES_TEXTURE_COUNT; i++) {
+        SDL_DestroyTexture(m_tiles->at(i));
+    }
     delete m_tiles;
 }
 
 
 
-
+/**
+ * @fn void Camera::displayMap (const vector<vector<int>> *map)
+ * @param map Carte de la scene
+ * @brief Affiche la carte sur l'ecran
+*/
 void Camera::displayMap (const vector<vector<int>> *map) {
 
     snapToMap();
@@ -289,6 +391,11 @@ void Camera::displayMap (const vector<vector<int>> *map) {
 
 
 
+/**
+ * @fn void Camera::displayEntities (const list<Entity> *entityList)
+ * @param entityList Liste des entites
+ * @brief Affiche les entites sur l'ecran
+*/
 void Camera::displayEntities (const list<Entity> *entityList) {
     SDL_FRect rect; // sur l'ecran
     rect.w = m_tileSize;
@@ -394,25 +501,30 @@ void Camera::drawE(SDL_Renderer *r, std::list<Entity> *elist, std::vector<SDL_Te
 
 
 
-
 /*
 
-mode libre
-
 deplacer checkifvisible vers camera
-
-voir pour les changements de taille d'ecran
-donc ajuster le taille sur la scene de chaque direction pour garder le ratio tilesize
--> appeller une fonction qui change la dim /
-
-commenter
 
 nettoyage de scene
 
 mode pour suivre la cam par defaut comme avant
 
+bug depassement de map
 
 
+
+
+
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////
+
+commenter /
+
+voir pour les changements de taille d'ecran /
+donc ajuster la taille sur la scene de chaque direction pour garder le ratio tilesize /
+-> appeller une fonction qui change la dim /
 
 a suivre : mettre plusieurs cam qui scindent l'ecran ?
 
