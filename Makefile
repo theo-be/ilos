@@ -62,8 +62,9 @@ exec : $(BINDIR)$(EXEC)
 
 doc :
 	mkdir -p $(DOCDIR)
+	rm -rf $(DOCDIR)*
 	doxygen Doxyfile
-	cp -r $(DOCDIR)* ~/docilo/
+	make -C $(DOCDIR)latex pdf
 
 give :
 	mkdir -p $(SAVEDIR)
