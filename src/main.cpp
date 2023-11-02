@@ -1,6 +1,6 @@
 /** 
  * @file main.cpp
- * @version 0.5
+ * @version 0.5.1
  * @date 25/08/2022 Debut du projet
  * @brief Fichier principal du projet
 */

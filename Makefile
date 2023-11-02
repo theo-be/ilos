@@ -8,7 +8,7 @@ EXEC = ilos
 SRC = $(wildcard $(SRCDIR)*.cpp)
 HEAD = $(SRC:.cpp=.hpp)
 OBJ = $(subst $(SRCDIR), $(OBJDIR), $(SRC:.cpp=.o))
-VERSION = 0.5
+VERSION = 0.5.1
 
 
 RM = rm
