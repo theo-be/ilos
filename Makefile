@@ -73,7 +73,7 @@ give :
 restore :
 	unzip -o $(SAVEDIR)
 
-release :
+release : $(BINDIR)$(EXEC)
 	mkdir -p $(RELEASEDIR)$(NEWRELEASEDIR)
 	cp -r $(RESSOURCESDIR) $(RELEASEDIR)$(NEWRELEASEDIR)
 	cp -r $(DATADIR) $(RELEASEDIR)$(NEWRELEASEDIR)
