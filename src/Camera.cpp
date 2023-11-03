@@ -33,6 +33,13 @@ Camera::Camera (float x, float y, float sceneWidth, float sceneHeight, float win
 
     m_lockedX = 0;
     m_lockedY = 0;
+
+    setTargetScreenArea(-1, -1);
+}
+
+Camera::~Camera () {
+    // unloadEntityTextures();
+    // unloadTilesTextures();
 }
 
 /**
@@ -81,6 +88,30 @@ void Camera::moveBy (const Vector2D &vector) {
         }
         if (!m_lockedY) {
             // bouger Y
+        }
+    }
+
+    snapToMap();
+
+    // m_boundingBox.x += x;
+    // m_boundingBox.y += y;
+}
+
+/**
+ * @fn void Camera::moveBy (float x, float y)
+ * @param vector Vecteur de deplacement
+ * @brief Decale la camera de vector
+*/
+void Camera::moveBy (float x, float y) {
+    if (m_cameraMode == Free) {
+        m_position.moveBy(x, y);
+    } else if (m_cameraMode == TargetEntity) {
+        // deplacer la camera sans quitter l'entite
+        if (!m_lockedX) {
+            m_position.moveBy(0, y);
+        }
+        if (!m_lockedY) {
+            m_position.moveBy(x, 0);
         }
     }
 
@@ -210,7 +241,7 @@ void Camera::unlockY () {
  * @brief Definit l'entite comme cible a suivre
 */
 void Camera::lockTo (Entity &entity) {
-    m_cameraMode = TargetEntity;
+    m_cameraMode = LockEntity;
     m_target = &entity;
     centerToTarget();
     
@@ -247,12 +278,64 @@ void Camera::setSceneDimension (float width, float height) {
  * @brief Met a jour les informations de la camera (par ex : sa position sur l'entite a suivre, etc.)
 */
 void Camera::update () {
-    // objectif : mettre a jour tout sur la cam directement
-    if (m_cameraMode == TargetEntity)
+    if (m_cameraMode == LockEntity)
         centerToTarget();
+    if (m_cameraMode == TargetEntity)
+        followTarget();
 
 }
 
+
+void Camera::setTargetScreenArea (float ratioX, float ratioY) {
+    // pair<float, float> campos = m_position.getCoords();
+    if (ratioX >= 0. && ratioX <= 1.) {
+        m_targetScreenArea.w = m_sceneWidth * ratioX;
+        m_targetScreenArea.x = - m_targetScreenArea.w / 2;
+    } else {
+        m_targetScreenArea.w = CAMERA_DEFAULT_AREA_WIDTH;
+        m_targetScreenArea.x = - m_targetScreenArea.w / 2;
+    }
+    if (ratioY >= 0. && ratioY <= 1.) {
+        m_targetScreenArea.h = m_sceneHeight * ratioY;
+        m_targetScreenArea.y = - m_targetScreenArea.h / 2;
+    } else {
+        m_targetScreenArea.h = CAMERA_DEFAULT_AREA_HEIGHT;
+        m_targetScreenArea.y = - m_targetScreenArea.h / 2;
+    }
+
+}
+
+void Camera::followTarget () {
+    pair<float, float> campos = m_position.getCoords();
+    SDL_FRect ehitbox = m_target->getHitbox();
+    float dist;
+
+    cout << "ratio xy : " << m_targetScreenArea.w << ',' << m_targetScreenArea.h << '\n';
+    cout << "rect  xy : " << m_targetScreenArea.x << ',' << m_targetScreenArea.y << '\n';
+
+    // trop a gauche
+    if (ehitbox.x < campos.first - m_sceneWidth / 2. - m_targetScreenArea.x * m_sceneWidth / 2.) {
+        dist = ehitbox.x - (campos.first - m_sceneWidth / 2. - m_targetScreenArea.x * m_sceneWidth / 2.);
+        m_position.moveBy(dist, 0.);
+    }
+    // trop a droite
+    else if (ehitbox.x + ehitbox.w > campos.first + m_sceneWidth / 2. + m_targetScreenArea.x * m_sceneWidth / 2.) {
+        dist = (ehitbox.x + ehitbox.w)- (campos.first + m_sceneWidth / 2. + m_targetScreenArea.x * m_sceneWidth / 2.);
+        m_position.moveBy(dist, 0.);
+    }
+
+    // trop haut
+    if (ehitbox.y < campos.second - m_sceneHeight / 2. - m_targetScreenArea.y * m_sceneHeight / 2.) {
+        dist = ehitbox.y - (campos.second - m_sceneHeight / 2. - m_targetScreenArea.y * m_sceneHeight / 2.);
+        m_position.moveBy(0., dist);
+    }
+    // trop bas
+    else if (ehitbox.y + ehitbox.h > campos.second + m_sceneHeight / 2. + m_targetScreenArea.y * m_sceneHeight / 2.) {
+        dist = (ehitbox.y + ehitbox.h)- (campos.second + m_sceneHeight / 2. + m_targetScreenArea.y * m_sceneHeight / 2.);
+        m_position.moveBy(0., dist);
+    }
+
+}
 
 
 // Methodes statiques
@@ -416,7 +499,7 @@ void Camera::displayEntities (const list<Entity> *entityList) {
 }
 
 
-// normalement inutilise
+// inutilise
 void Camera::draw(SDL_Renderer *r, vector<SDL_Texture*> *bTextures, vector<vector<int>> *map) {
     SDL_FRect rect = {0, 0, m_tileSize, m_tileSize};
     pair<float, float> cameraPos = m_position.getCoords();
@@ -472,7 +555,7 @@ void Camera::draw(SDL_Renderer *r, vector<SDL_Texture*> *bTextures, vector<vecto
 }
 
 
-// normalement inutilise
+// inutilise
 void Camera::drawE(SDL_Renderer *r, std::list<Entity> *elist, std::vector<SDL_Texture*> *texture) {
 
     SDL_FRect rect; // sur l'ecran
@@ -498,73 +581,3 @@ void Camera::drawE(SDL_Renderer *r, std::list<Entity> *elist, std::vector<SDL_Te
     }
 
 }
-
-
-
-/*
-
-deplacer checkifvisible vers camera
-
-nettoyage de scene
-
-mode pour suivre la cam par defaut comme avant
-
-bug depassement de map
-
-
-
-
-
-
-
-
-//////////////////////////////////////////////////////////////////////////////////////
-
-commenter /
-
-voir pour les changements de taille d'ecran /
-donc ajuster la taille sur la scene de chaque direction pour garder le ratio tilesize /
--> appeller une fonction qui change la dim /
-
-a suivre : mettre plusieurs cam qui scindent l'ecran ?
-
-si oui alors
-mettre un decalage de ou commence la cam
-dessiner uniquement dans l'espace de la cam : ne pas deborder
-
-
-
-adapter le verrouillage de la cam a lockX et lockY /
-
-pour lock : garder un pointeur sur l'entite et verifier sa position dans la cam /
-il faut que la fonction soit appelee tt le temps /
-
-donc camera a sa dim sur la scene et la dim de l'ecran /
-cam utilise la carte et dessine les textures correspondantes /
-aux bonnes coos de l'ecran sans que scene se soucie de l'ecran de n'importe quelle maniere /
-
-qu'est-ce que tilesize ? une variable qui permet de remplir l'ecran a partir de la camera /
-
-objectif : scene ne se soucie jamais de l'ecran mais que du jeu sans l'affichage /
-
-comment passer de float a int sans cast : /
-les coordonnees de la cam sont flottants /
-les pixels de l'ecran sont entiers /
-voir utilisation de sdl_rendercopyf /
-
-verif hors de carte /
-
-stocker la dim de la cam et la dim finale sur l'ecran /
-
-qui dessine sur l'ecran /
-enlever tilesize /
-
-ainsi liberer les textures de la scene /
-mais ou les mettre ? /
-dans camera ? mais si on a plusieurs cameras ? /
--> charger dynamiquement comme dans scene et si plusieurs cam alors copier le pointeur /
-mieux : statique /
-
-*/
-
-

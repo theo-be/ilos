@@ -127,7 +127,7 @@ int main(int argc, char *argv[]) {
 
     scene.loadEntityTextures();
     
-    camera.loadEntityTextures("ressources/entity");
+    Camera::loadEntityTextures("ressources/entity");
 
 
 
@@ -140,7 +140,7 @@ int main(int argc, char *argv[]) {
 
     cout << "Chargement des textures de la carte" << endl;
 
-    camera.loadTilesTextures("ressources/fg");
+    Camera::loadTilesTextures("ressources/fg");
 
     cout << "Textures de la carte chargees" << endl;
 
@@ -302,6 +302,7 @@ int main(int argc, char *argv[]) {
 
     
     camera.lockTo(*scene.getPlayer()->getTarget());
+    camera.setMode(TargetEntity);
     camera.displayMap(scene.getMap());
     camera.displayEntities(scene.getMobList());
 
@@ -744,12 +745,12 @@ int main(int argc, char *argv[]) {
     cout << "Dechargement des textures" << endl;
 
     scene.unloadTiles();
-    camera.unloadTilesTextures();
+    Camera::unloadTilesTextures();
 
     cout << "Tuiles dechargees" << endl;
 
     scene.unloadEntityTextures();
-    camera.unloadEntityTextures();
+    Camera::unloadEntityTextures();
     // unloadEntityTextures(entityTextures);
 
     cout << "Textures des entites dechargees" << endl;

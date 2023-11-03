@@ -27,8 +27,8 @@
 #define MAP_RENDER_HEIGHT (WINDOW_HEIGHT / TILE_SIZE + 1)
 
 // zone pour la camera
-#define MAX_AREA_WIDTH (3 * MAP_RENDER_WIDTH * TILE_SIZE / 4)
-#define MAX_AREA_HEIGHT (2 * MAP_RENDER_HEIGHT * TILE_SIZE / 3)
+#define CAMERA_DEFAULT_AREA_WIDTH (3. / 4.)
+#define CAMERA_DEFAULT_AREA_HEIGHT (2. / 3.)
 
 #define FONT_SIZE_INTERFACE 16
 #define FONT_TEXTURE_SIZE 600
@@ -51,7 +51,7 @@ enum TextAlign {Left, Right, Center, Justify};
 
 enum InteractionType {None, Talk};
 
-enum CameraMode {Default, Free, Locked, TargetEntity};
+enum CameraMode {Default, Free, Locked, TargetEntity, LockEntity};
 
 // Converti en classes enfantes de Entity
 // enum EntityType {Mob, Block, ItemDrop};

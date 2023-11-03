@@ -21,6 +21,8 @@ class Camera {
 
     // Camera (float x, float y, float w, float h);
     Camera (float x, float y, float sceneWidth, float sceneHeight, float windowWidth, float windowHeight, SDL_Renderer *renderer);
+    ~Camera ();
+
 
     const Vector2D getPosition () const;
     const SDL_FRect getBoundingBox () const;
@@ -37,6 +39,8 @@ class Camera {
     void snapToMap ();
 
     void centerToTarget ();
+    void followTarget ();
+    void setTargetScreenArea (float ratioX, float ratioY);
 
     void lockTo (Entity &entity);
     void lock ();
@@ -94,6 +98,9 @@ class Camera {
     // float m_targetScreenRatioY;
 
     Entity *m_target;
+
+    // Aire sur l'ecran par rapport a la camera ou l'entite cible peut se deplacer sans que la camera ne se deplace
+    SDL_FRect m_targetScreenArea;
 
     static SDL_Renderer *m_renderer;
 
