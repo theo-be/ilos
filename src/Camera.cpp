@@ -38,8 +38,8 @@ Camera::Camera (float x, float y, float sceneWidth, float sceneHeight, float win
 }
 
 Camera::~Camera () {
-    // unloadEntityTextures();
-    // unloadTilesTextures();
+    delete m_tiles;
+    delete m_mobEntityTextures;
 }
 
 /**
@@ -310,8 +310,8 @@ void Camera::followTarget () {
     SDL_FRect ehitbox = m_target->getHitbox();
     float dist;
 
-    cout << "ratio xy : " << m_targetScreenArea.w << ',' << m_targetScreenArea.h << '\n';
-    cout << "rect  xy : " << m_targetScreenArea.x << ',' << m_targetScreenArea.y << '\n';
+    // cout << "ratio xy : " << m_targetScreenArea.w << ',' << m_targetScreenArea.h << '\n';
+    // cout << "rect  xy : " << m_targetScreenArea.x << ',' << m_targetScreenArea.y << '\n';
 
     // trop a gauche
     if (ehitbox.x < campos.first - m_sceneWidth / 2. - m_targetScreenArea.x * m_sceneWidth / 2.) {
@@ -395,10 +395,12 @@ void Camera::loadTilesTextures (const char *fileName) {
  * @brief Decharge les textures des entites
 */
 void Camera::unloadEntityTextures () {
-    for (int i = 0; i < ENTITY_TEXTURE_COUNT; i++) {
-        SDL_DestroyTexture(m_mobEntityTextures->at(i));
+    if (m_mobEntityTextures) {
+        for (int i = 0; i < ENTITY_TEXTURE_COUNT; i++) {
+            SDL_DestroyTexture(m_mobEntityTextures->at(i));
+        }
+        m_mobEntityTextures->clear();
     }
-    delete m_mobEntityTextures;
 }
 
 /**
@@ -406,10 +408,12 @@ void Camera::unloadEntityTextures () {
  * @brief Decharge les textures des tuiles
 */
 void Camera::unloadTilesTextures () {
-    for (int i = 0; i < TILES_TEXTURE_COUNT; i++) {
-        SDL_DestroyTexture(m_tiles->at(i));
+    if (m_tiles) {
+        for (int i = 0; i < TILES_TEXTURE_COUNT; i++) {
+            SDL_DestroyTexture(m_tiles->at(i));
+        }
+        m_tiles->clear();
     }
-    delete m_tiles;
 }
 
 
