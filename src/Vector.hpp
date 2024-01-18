@@ -30,11 +30,16 @@ class Vector2D {
     float getNorm () const;
     std::pair<float, float> getCoords () const;
 
+    void normalize ();
+
 
 
     static Vector2D createVectorFromAngle (float angle);
 
+    bool equalsTo (Vector2D const &v) const;
+
     Vector2D& operator+= (Vector2D const &v);
+    Vector2D& operator-= (Vector2D const &v);
 
 
     protected:
@@ -58,6 +63,12 @@ class Vector2D {
 };
 
 Vector2D operator+ (Vector2D const &v1, Vector2D const &v2);
+Vector2D operator- (Vector2D const &v1, Vector2D const &v2);
+Vector2D operator* (Vector2D const &v1, float scale);
+Vector2D operator/ (Vector2D const &v1, float scale);
+
+bool operator== (Vector2D const &v1, Vector2D const &v2);
+bool operator!= (Vector2D const &v1, Vector2D const &v2);
 
 
 

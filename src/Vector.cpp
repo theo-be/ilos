@@ -96,13 +96,20 @@ void Vector2D::moveTo (const Vector2D &vector) {
 void Vector2D::scaleBy (float scale) {
     m_scale *= scale;
     m_norm *= scale;
-    calculateCoords();
+    m_x *= scale;
+    m_y *= scale;
 }
 
 float Vector2D::getNorm () const {
     return m_norm;
 }
 
+void Vector2D::normalize () {
+    if (m_norm) {
+        m_x /= m_norm;
+        m_y /= m_norm;
+    }
+}
 
 
 // statique
@@ -114,8 +121,19 @@ Vector2D Vector2D::createVectorFromAngle(float angle) {
     return v;
 }
 
+
+bool Vector2D::equalsTo (Vector2D const &v) const {
+    return m_x == v.m_x && m_y == v.m_y;
+}
+
 Vector2D& Vector2D::operator+= (Vector2D const &v) {
     moveBy(v);
+    return *this;
+}
+
+Vector2D& Vector2D::operator-= (Vector2D const &v) {
+    m_x -= v.m_x;
+    m_y -= v.m_y;
     return *this;
 }
 
@@ -126,3 +144,28 @@ Vector2D operator+ (Vector2D const &v1, Vector2D const &v2) {
     return res;
 }
 
+Vector2D operator- (Vector2D const &v1, Vector2D const &v2) {
+    Vector2D res(v1);
+    res -= v2;
+    return res;
+}
+
+Vector2D operator* (Vector2D const &v1, float scale) {
+    Vector2D v(v1);
+    v.scaleBy(scale);
+    return v;
+}
+
+Vector2D operator/ (Vector2D const &v1, float scale) {
+    Vector2D v(v1);
+    v.scaleBy(1. / scale);
+    return v;
+}
+
+bool operator== (Vector2D const &v1, Vector2D const &v2) {
+    return v1.equalsTo(v2);
+}
+
+bool operator!= (Vector2D const &v1, Vector2D const &v2) {
+    return !v1.equalsTo(v2);
+}
