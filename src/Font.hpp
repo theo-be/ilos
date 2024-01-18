@@ -5,6 +5,23 @@
 
 #include "constants.hpp"
 
+
+
+#define MAX_GLYPHS 400
+
+// en octets
+#define MAX_GLYPH_SIZE 8
+#define MAX_WORD_LENGTH 31
+#define MAX_LINE_LENGTH 151
+
+#define FONT_TEXTURE_SIZE 600
+
+#define DEFAULT_FONT_LOCATION "resources/fonts/16020_FUTURAM.ttf"
+#define DEFAULT_FONT_SIZE 16
+
+
+enum TextAlign {Left, Right, Center, Justify};
+
 class Font {
     public:
     Font (const char *src, int size, SDL_Renderer *renderer);
@@ -16,6 +33,7 @@ class Font {
     // void displayBoxedText (SDL_Renderer *renderer, const char *str, const SDL_Rect &box, TextAlign alignment = Left, SDL_Color *color = nullptr); 
     // Arranger la taille du texte pour qu'il rentre dans la boite
 
+    void setRenderer(SDL_Renderer *renderer);
 
     private:
     int nextGlyph (const char *str, int *i, char *buffer = NULL);

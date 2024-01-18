@@ -53,6 +53,7 @@ class Camera {
 
 
     void setMode (CameraMode mode);
+    void setRenderer (SDL_Renderer *renderer);
 
     void displayMap (const std::vector<std::vector<int>> *map);
     void displayEntities (const std::list<Entity> *entityList);

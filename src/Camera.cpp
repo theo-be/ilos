@@ -188,6 +188,10 @@ void Camera::setMode (CameraMode mode) {
     m_cameraMode = mode;
 }
 
+void Camera::setRenderer (SDL_Renderer *renderer) {
+    m_renderer = renderer;
+}
+
 /**
  * @fn void Camera::lock ()
  * @brief Bloque la camera sur la scene

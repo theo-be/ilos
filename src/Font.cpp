@@ -361,5 +361,7 @@ void displayText (SDL_Renderer *renderer, TTF_Font *font, const char *text, SDL_
     SDL_RenderCopy(renderer, texture, NULL, &dim);
     SDL_DestroyTexture(texture);
 }
-
+void Font::setRenderer(SDL_Renderer *renderer) {
+    m_renderer = renderer;
+}
 
