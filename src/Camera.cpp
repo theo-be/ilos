@@ -38,8 +38,10 @@ Camera::Camera (float x, float y, float sceneWidth, float sceneHeight, float win
 }
 
 Camera::~Camera () {
-    delete m_tiles;
-    delete m_mobEntityTextures;
+    // if (m_tiles)
+    // delete m_tiles;
+    // if (m_mobEntityTextures)
+    // delete m_mobEntityTextures;
 }
 
 /**
