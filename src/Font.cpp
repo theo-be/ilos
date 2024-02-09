@@ -6,9 +6,9 @@
 #include <string>
 #include <cstring>
 
-#include "constants.hpp"
+
 #include "Font.hpp"
-#include "texture_management.hpp"
+#include "App.hpp"
 
 using namespace std;
 
@@ -41,12 +41,12 @@ Font::Font (const char *src, int size, SDL_Renderer *renderer) : m_renderer(rend
 }
 
 Font::~Font () {
-    SDL_FreeSurface(m_surface);
-    SDL_DestroyTexture(m_atlas);
-    free(m_glyphs);
-    free(m_wordBuffer);
-    free(m_lineBuffer);
-    free(m_glyphBuffer);
+    // SDL_FreeSurface(m_surface);
+    // SDL_DestroyTexture(m_atlas);
+    // free(m_glyphs);
+    // free(m_wordBuffer);
+    // free(m_lineBuffer);
+    // free(m_glyphBuffer);
 }
 
 /**
@@ -113,7 +113,7 @@ void Font::init (const char *src, int size) {
         dest.x += dest.w;
     }
 
-    m_atlas = toTexture(m_renderer, m_surface);
+    m_atlas = App::toTexture(m_surface);
     m_surface = nullptr;
 }
 
@@ -336,7 +336,7 @@ void displayText (SDL_Renderer *renderer, TTF_Font *font, const char *text, SDL_
     TTF_SizeUTF8(font, text, &dim.w, &dim.h);
     SDL_Surface *surface = TTF_RenderUTF8_Blended(font, text, color);
     // verifier si c est bon
-    SDL_Texture *texture = toTexture(renderer, surface);
+    SDL_Texture *texture = App::toTexture(surface);
 
 
 
