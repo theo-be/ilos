@@ -2,8 +2,7 @@
 #define FONT_H
 
 #include <SDL2/SDL.h>
-
-#include "constants.hpp"
+#include <SDL2/SDL_ttf.h>
 
 
 
