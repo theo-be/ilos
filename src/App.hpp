@@ -19,7 +19,7 @@
 #define DEFAULT_WINDOW_HEIGHT 720
 
 
-#define GAME_VERSION "neuro v0.1"
+#define GAME_VERSION "ilos v0.5.1"
 
 
 
@@ -30,28 +30,23 @@
 class App {
     public:
 
-    App ();
-    ~App ();
 
     static void init ();
 
     static void quit ();
 
-    static void initSDL ();
-
-    static void exitSDL ();
 
 
 
     static void main ();
 
-    static void handleEvents ();
 
-    static void doLogic ();
 
-    static void doDisplay ();
+    // getters
 
     static bool isPressed (SDL_Keycode keycode);
+
+    static float getDeltaTime ();
 
 
 
@@ -60,7 +55,7 @@ class App {
     static SDL_Texture *toTexture (SDL_Surface *surface);
 
 
-    static void limitFPS ();
+    // static void limitFPS ();
     static void limitFPS (unsigned int);
 
 
@@ -70,6 +65,17 @@ class App {
 
     static void initUserInputs ();
 
+    static void initSDL ();
+
+    static void exitSDL ();
+
+    static void handleEvents ();
+
+    static void doLogic ();
+
+    static void doDisplay ();
+
+    static void getWindowDimension ();
 
 
     static std::string m_SDLVersion;
@@ -81,7 +87,7 @@ class App {
     static SDL_Window *m_window;
     static SDL_Renderer *m_renderer;
 
-    static int m_deltaTime_ms;
+    static float m_deltaTime_ms;
 
     static bool m_gameLaunched;
     static bool m_gamePaused;
@@ -89,11 +95,18 @@ class App {
     static std::unordered_map<SDL_Keycode, bool> *m_userInputs;
 
     // font par defaut
-    static Font m_font;
+    static Font *m_font;
 
-    static Scene m_scene;
+    static Scene *m_scene;
 
-    static Camera m_camera;
+    static Camera *m_camera;
+
+    App ();
+    ~App ();
+
+    private:
+
+
 
 };
 

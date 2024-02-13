@@ -11,6 +11,8 @@
 #include <chrono>
 #include <unordered_map>
 #include <iterator>
+#include <algorithm>
+#include <utility>
 
 
 #include "App.hpp"
@@ -18,6 +20,9 @@
 #include "Camera.hpp"
 #include "Font.hpp"
 #include "Debug.hpp"
+#include "Entity.hpp"
+#include "Vector.hpp"
+#include "Player.hpp"
 
 
 using namespace std;
@@ -29,12 +34,12 @@ int App::m_windowWidth = 0;
 int App::m_windowHeight = 0;
 SDL_Window *App::m_window = nullptr;
 SDL_Renderer *App::m_renderer = nullptr;
-int App::m_deltaTime_ms = 0;
+float App::m_deltaTime_ms = DEFAULT_DELTA_TIME;
 bool App::m_gameLaunched = true;
 unordered_map<SDL_Keycode, bool> *App::m_userInputs = nullptr;
-Font App::m_font(DEFAULT_FONT_LOCATION, DEFAULT_FONT_SIZE, App::m_renderer);
-Scene App::m_scene;
-Camera App::m_camera;
+Font *App::m_font = nullptr;
+Scene *App::m_scene = nullptr;
+Camera *App::m_camera = nullptr;
 
 
 App::App ()
@@ -56,19 +61,70 @@ void App::init () {
     m_windowWidth = DEFAULT_WINDOW_WIDTH;
     m_windowHeight = DEFAULT_WINDOW_HEIGHT;
 
+
+    /* -------------------------------------------------- */
+    // Initialisation de SDL
+    /* -------------------------------------------------- */
+
     initSDL();
 
-    
-    m_font.setRenderer(m_renderer);
-    m_font.init(DEFAULT_FONT_LOCATION, DEFAULT_FONT_SIZE);
+    cout << "SDL chargee" << endl;
 
-    m_camera.setRenderer(m_renderer);
-    m_camera.setWindowDimension(m_windowWidth, m_windowHeight);
-    m_camera.setSceneDimension(1280, 720);
+    // scene
+
+    // charger les entites et le joueur
+
+    cout << "Initialisation de la scene" << endl;
+
+    m_scene = new Scene();
+
+    m_scene->init();
+
+    
+    cout << "Initialisation des entites" << endl;
+    cout << "Entites initialisees" << endl;
+
+    cout << "Initialisation du joueur" << endl;
+    cout << "Joueur initialise" << endl;
+
+    cout << "Scene initialisee" << endl;
+
+
+    // camera
+
+    cout << "Initialisation de la camera" << endl;
+
+    m_camera = new Camera(DEFAULT_SCENE_WIDTH, DEFAULT_SCENE_HEIGHT, m_windowWidth, m_windowHeight, m_renderer);
+    
+    cout << "Chargement des textures des entites" << endl;
+
+    Camera::loadEntityTextures(DEFAULT_ENTITY_LOCATION);
+    cout << "Textures des entites chargees" << endl;
+
+    Camera::loadTilesTextures(DEFAULT_TILE_LOCATION);
+
+    
+    cout << "Textures de la carte chargees" << endl;
+
+    m_camera->setMode(LockEntity);
+    m_camera->setTarget(m_scene->getPlayer()->getTarget());
+
+    cout << "Camera totalement initialisee" << endl;
+    // police
+
+    cout << "Initialisation de la police" << endl;
+
+    m_font = new Font(DEFAULT_FONT_LOCATION, DEFAULT_FONT_SIZE, m_renderer);
+
+    cout << "Police initialisee" << endl;
+
+
+    // autre
 
     m_userInputs = new unordered_map<SDL_Keycode, bool>;
     initUserInputs();
 
+    cout << "Jeu totalement initialise" << endl;
     
 
 
@@ -79,12 +135,49 @@ void App::init () {
 
 void App::quit () {
 
-
+    cout << "Dechargement des entrees utilisateur" << endl;
 
     m_userInputs->clear();
     delete m_userInputs;
 
+    cout << "Entrees utilisateur dechargees" << endl;
+
+    cout << "Dechargement des entites" << endl;
+
+    m_scene->unloadEntities();
+    
+
+    cout << "Entites dechargees" << endl;
+
+    cout << "Dechargement de la carte" << endl;
+    m_scene->unloadMap();
+
+    cout << "Carte dechargee" << endl;
+
+    delete m_scene;
+
+    cout << "Dechargement des textures" << endl;
+
+    Camera::unloadTilesTextures();
+    cout << "Tuiles dechargees" << endl;
+    Camera::unloadEntityTextures();
+    cout << "Textures des entites dechargees" << endl;
+
+    
+
+    delete m_camera;
+
+    cout << "Textures dechargees" << endl;
+
+    cout << "Dechargement de la police" << endl;
+    m_font->clear();
+    delete m_font;
+    cout << "Police dechargee" << endl;
+
     exitSDL();
+    cout << "SDL dechargee, TTF decharge" << endl;
+
+
 }
 
 void App::initSDL () {
@@ -122,10 +215,6 @@ void App::initSDL () {
         exitSDL();
         exit(-1);
     }
-
-    cout << "SDL initialisee\n";
-
-
 }
 
 
@@ -219,6 +308,10 @@ void App::handleEvents () {
                 m_userInputs->insert_or_assign(event.key.keysym.sym, false);
                 break;
 
+            case SDL_WINDOWEVENT:
+                getWindowDimension();
+                break;
+
             
             default:
                 break;
@@ -232,19 +325,24 @@ void App::handleEvents () {
 }
 
 void App::doLogic () {
-    // m_scene.update();
+
+    m_scene->update();
+    m_camera->update();
+
 }
 
 void App::doDisplay () {
 
-    SDL_SetRenderDrawColor(m_renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+    SDL_SetRenderDrawColor(m_renderer, 128, 192, 255, SDL_ALPHA_OPAQUE);
     SDL_RenderClear(m_renderer);
 
 
-    // m_camera.displayEntities(m_scene.getEntityList());
 
-    SDL_Color c = {255, 255, 255, SDL_ALPHA_OPAQUE};
-    m_font.displayText("Yo la street", 0, 0, Left, &c);
+    m_camera->displayMap(m_scene->getMap());
+    m_camera->displayEntities(m_scene->getMobList());
+
+
+    m_font->displayText("test", 0, 0);
 
 
     SDL_RenderPresent(m_renderer);
@@ -275,6 +373,10 @@ void App::doDisplay () {
 
 bool App::isPressed (SDL_Keycode keycode) {
     return m_userInputs->at(keycode);
+}
+
+float App::getDeltaTime () {
+    return m_deltaTime_ms;
 }
 
 /**
@@ -330,4 +432,10 @@ void App::limitFPS (unsigned int limit) {
 
 int App::map (int x, int a, int b, int c, int d) {
     return (x - a) * ((d - c) / (b - a)) + c;
+}
+
+void App::getWindowDimension () {
+    SDL_GetWindowSize(m_window, &m_windowWidth, &m_windowHeight);
+
+    m_camera->setWindowDimension(m_windowWidth, m_windowHeight);
 }
