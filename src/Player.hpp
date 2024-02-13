@@ -9,16 +9,18 @@
 
 /**
  * @class Player
- * @brief Classe du joueur, herite de Entity
+ * @brief Classe du joueur
 */
 class Player {
     public:
     Player ();
     Player (Entity *target);
 
-    // ~Player();
+    ~Player();
 
     void doActions (std::list<Entity> &entityList, unsigned int dt);
+
+    void update ();
 
     Entity *getTarget () const;
     void setTarget (Entity *);
