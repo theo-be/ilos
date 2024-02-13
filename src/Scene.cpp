@@ -9,111 +9,59 @@
 #include <utility>
 #include <algorithm>
 
-#include "constants.hpp"
 #include "Scene.hpp"
-#include "texture_management.hpp"
+#include "App.hpp"
 #include "Player.hpp"
 
+#define DEFAULT_MAP_LOCATION "data/maps/map"
 
 
 using namespace std;
 
-Scene::Scene () : m_mapWidth(0), m_mapHeight(0), m_cameraRect({0, 0, WINDOW_WIDTH, WINDOW_HEIGHT}), m_renderer(nullptr), m_player(nullptr), m_tileSize(TILE_SIZE), m_windowWidth(WINDOW_WIDTH), m_windowHeight(WINDOW_HEIGHT)
+Scene::Scene () : m_mapWidth(0), m_mapHeight(0), m_player(nullptr)
 {
-    m_mapRenderWidth = m_windowWidth / m_tileSize + 1;
-    m_mapRenderHeight = m_windowHeight / m_tileSize + 1;
-
-    m_maxAreaWidth = (3 * m_mapRenderWidth / m_tileSize / 4);
-    m_maxAreaHeight = 2 * m_mapRenderHeight * m_tileSize / 3;
 
     m_map = new vector<vector<int>>;
-    m_tiles = new vector<SDL_Texture*>;
     m_mobList = new list<Entity>;
     m_blockEntityList = new list<Entity>;
     m_itemDropList = new list<Entity>;
     m_visibleEntities = new list<Entity*>;
-    m_mobEntityTextures = new vector<SDL_Texture*>;
-    m_blockEntityTextures = new vector<SDL_Texture*>;
-    m_itemDropEntityTextures = new vector<SDL_Texture*>;
     m_map->clear();
-    m_tiles->clear();
     m_mobList->clear();
     m_itemDropList->clear();
     m_blockEntityList->clear();
     m_visibleEntities->clear();
-    m_mobEntityTextures->clear();
-    m_blockEntityTextures->clear();
-    m_itemDropEntityTextures->clear();
 
     m_player = new Player;
-    initPlayer();
 
-    // m_camera = new Camera(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
-    m_camera = new Camera(0, 0, 40., 22.5, WINDOW_WIDTH, WINDOW_HEIGHT, m_renderer);
-
-    m_showEntities = new ShowEntity(m_renderer, this, m_mobEntityTextures);
-
-
-    
-    m_collisionIdArray[0] = 2;
-    m_collisionIdArray[1] = 3;
 }
 
-Scene::Scene(SDL_Renderer *renderer) : m_mapWidth(0), m_mapHeight(0), m_cameraRect({0, 0, WINDOW_WIDTH, WINDOW_HEIGHT}), m_renderer(renderer), m_tileSize(TILE_SIZE), m_windowWidth(WINDOW_WIDTH), m_windowHeight(WINDOW_HEIGHT)
-{
-    m_mapRenderWidth = m_windowWidth / m_tileSize + 1;
-    m_mapRenderHeight = m_windowHeight / m_tileSize + 1;
-
-    m_maxAreaWidth = 3 * m_mapRenderWidth * m_tileSize / 4;
-    m_maxAreaHeight = 2 * m_mapRenderHeight * m_tileSize / 3;
-
-    m_map = new vector<vector<int>>;
-    m_tiles = new vector<SDL_Texture*>;
-    m_mobList = new list<Entity>;
-    m_blockEntityList = new list<Entity>;
-    m_itemDropList = new list<Entity>;
-    m_visibleEntities = new list<Entity*>;
-    m_mobEntityTextures = new vector<SDL_Texture*>;
-    m_blockEntityTextures = new vector<SDL_Texture*>;
-    m_itemDropEntityTextures = new vector<SDL_Texture*>;
-    m_map->clear();
-    m_tiles->clear();
-    m_mobList->clear();
-    m_itemDropList->clear();
-    m_blockEntityList->clear();
-    m_visibleEntities->clear();
-    m_mobEntityTextures->clear();
-    m_blockEntityTextures->clear();
-    m_itemDropEntityTextures->clear();
-    
-    // m_camera = new Camera(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
-    m_camera = new Camera(0, 0, 40., 22.5, WINDOW_WIDTH, WINDOW_HEIGHT, m_renderer);
-
-    m_player = new Player;
-    initPlayer();
-
-    m_showEntities = new ShowEntity(m_renderer, this, m_mobEntityTextures);
-
-    m_collisionIdArray[0] = 2;
-    m_collisionIdArray[1] = 3;
-}
 
 Scene::~Scene () {
     unloadMap();
-    m_tiles->clear();
     m_mobList->clear();
     m_itemDropList->clear();
     m_blockEntityList->clear();
     delete m_map;
-    delete m_tiles;
-    delete m_camera;
     delete m_mobList;
     delete m_blockEntityList;
     delete m_itemDropList;
 
-    delete m_mobEntityTextures;
-    delete m_blockEntityTextures;
-    delete m_itemDropEntityTextures;
+}
+
+void Scene::init() {
+    // m_mapRenderWidth = m_windowWidth / m_tileSize + 1;
+    // m_mapRenderHeight = m_windowHeight / m_tileSize + 1;
+
+    // m_maxAreaWidth = 3 * m_mapRenderWidth * m_tileSize / 4;
+    // m_maxAreaHeight = 2 * m_mapRenderHeight * m_tileSize / 3;
+    
+    initPlayer();
+    initMap(DEFAULT_MAP_LOCATION);
+    loadEntities();
+
+    m_collisionIdArray[0] = 2;
+    m_collisionIdArray[1] = 3;
 }
 
 
@@ -137,29 +85,6 @@ Player *Scene::getPlayer () const {
     return m_player;
 }
 
-std::vector<SDL_Texture*> *Scene::getMobEntityTextures () const {
-    return m_mobEntityTextures;
-}
-
-Camera *Scene::getCamera () const {
-    return m_camera;
-}
-
-int Scene::getTileSize () const {
-    return m_tileSize;
-}
-
-void Scene::setTileSize (int value) {
-    m_tileSize = value;
-}
-
-void Scene::increaseTileSize () {
-    m_tileSize++;
-}
-
-void Scene::decreaseTileSize () {
-    m_tileSize--;
-}
 
 
 
@@ -217,39 +142,7 @@ void Scene::unloadMap () {
     m_map->clear();
 }
 
-/**
- * @fn int Scene::loadTiles (SDL_Renderer *renderer)
- * @param renderer renderer
- * @returns 0 en cas de succes
- * @brief charge les tuiles dans la liste des textures de la carte
-*/
-int Scene::loadTiles () {
-    string tileFile = "";
-    SDL_Texture *tile;
-    int i = 0;
-    ostringstream stream;
-    while (1) {
-        i++;
-        stream.str("");
-        stream << "ressources/fg" << i << ".bmp";
-        tileFile = stream.str();
-        tile = loadTexture(m_renderer, tileFile);
-        if (tile) m_tiles->push_back(tile);
-        else break;
-    }
-    return 0;
-}
 
-/**
- * @fn void Scene::unloadTiles ()
- * @brief decharge les tuiles de la carte
-*/
-void Scene::unloadTiles () {
-    for (int i = 0; i < TILES_TEXTURE_COUNT; i++) {
-        SDL_DestroyTexture(m_tiles->at(i));
-    }
-    m_tiles->clear();
-}
 
 /**
  * @fn int loadEntities ()
@@ -270,7 +163,7 @@ int Scene::loadEntities () {
 */
 int Scene::loadMobEntities () {
     ifstream file;
-    Entity e;
+    Entity e(this);
     SDL_FRect h = {0, 0, 1., 1.};
     string fileName = "data/entities/entities";
     string entityName = "";
@@ -350,63 +243,6 @@ void Scene::unloadItemDropEntities () {
 }
 
 
-int Scene::loadEntityTextures () {
-    loadMobEntityTextures();
-    loadBlockEntityTextures();
-    loadItemDropEntityTextures();
-    return 0;
-}
-
-int Scene::loadMobEntityTextures () {
-    string fileName = "";
-    ostringstream stream;
-    SDL_Texture *texture = NULL;
-    int i = 0;
-
-    while (1) {
-        i++;
-        stream.str("");
-        stream << "ressources/entity" << i << ".bmp";
-        fileName = stream.str();
-        texture = loadTexture(m_renderer, fileName);
-        if (texture) m_mobEntityTextures->push_back(texture);
-        else break;
-    }
-    return 0;
-}
-
-int Scene::loadBlockEntityTextures () {
-    return 0;
-}
-
-int Scene::loadItemDropEntityTextures () {
-    return 0;
-}
-
-
-void Scene::unloadEntityTextures () {
-    unloadMobEntityTextures();
-    unloadBlockEntityTextures();
-    unloadItemDropEntityTextures();
-}
-void Scene::unloadMobEntityTextures () {
-    for (int i = 0; i < ENTITY_TEXTURE_COUNT; i++) {
-        SDL_DestroyTexture(m_mobEntityTextures->at(i));
-    }
-    m_mobEntityTextures->clear();
-}
-void Scene::unloadBlockEntityTextures () {
-    m_mobEntityTextures->clear();
-}
-void Scene::unloadItemDropEntityTextures () {
-    m_mobEntityTextures->clear();
-}
-
-
-
-
-
-
 
 
 
@@ -417,7 +253,7 @@ void Scene::unloadItemDropEntityTextures () {
  * @brief ajoute une entite a la position du joueur
 */
 void Scene::addEntityToPlayerPos () {
-    Entity e;
+    Entity e(this);
     ostringstream stream;
     stream << "PEDRO" << e.getId();
     string name = stream.str();
@@ -431,81 +267,81 @@ void Scene::addEntityToPlayerPos () {
     Entity::increaseCount();
 }
 
-/**
- * @fn void Scene::doActions (SDL_Renderer *renderer, Entity &entity)
- * @brief fait les actions de la scene
- * @see Scene::moveCamera
-*/
-void Scene::doActions (bool left, bool right, bool up, bool down, unsigned int dt) {
-    moveCamera(*m_player->getTarget());
+// /**
+//  * @fn void Scene::doActions (SDL_Renderer *renderer, Entity &entity)
+//  * @brief fait les actions de la scene
+//  * @see Scene::moveCamera
+// */
+// void Scene::doActions (bool left, bool right, bool up, bool down, unsigned int dt) {
+//     moveCamera(*m_player->getTarget());
 
-    m_player->getTarget()->move(*this, left, right, up, down, dt, m_renderer);
-    // m_player->moveToWorld(*this, m_renderer);
-
-
-    m_player->doActions(*m_mobList, dt);
+//     m_player->getTarget()->move(*this, left, right, up, down, dt, m_renderer);
+//     // m_player->moveToWorld(*this, m_renderer);
 
 
-}
-
-/**
- * @fn void Scene::moveCamera (Entity &entity)
- * @param target entite cible
- * @brief Deplace la camera vers l'entite cible
-*/
-void Scene::moveCamera (const Entity &target) {
-
-    // ancien systeme de camera
-
-    SDL_FRect hitbox = target.getHitbox();
-    SDL_FRect screenPosition;
-
-    screenPosition.x = hitbox.x * m_tileSize - m_cameraRect.x;
-    screenPosition.y = hitbox.y * m_tileSize - m_cameraRect.y;
-    screenPosition.w = hitbox.w * m_tileSize;
-    screenPosition.h = hitbox.h * m_tileSize;
-
-    // droite
-    if (screenPosition.x + screenPosition.w > m_maxAreaWidth) {
-        m_cameraRect.x = hitbox.x * m_tileSize - m_maxAreaWidth;
-    }
-    // gauche
-    else if (screenPosition.x < m_mapRenderWidth - m_maxAreaWidth) {
-        m_cameraRect.x = hitbox.x  * m_tileSize- (m_mapRenderWidth * m_tileSize - m_maxAreaWidth);
-    }
-
-    // bas
-    if (screenPosition.y + screenPosition.h > m_maxAreaHeight) {
-        m_cameraRect.y = hitbox.y * m_tileSize - m_maxAreaHeight;
-    }
-    // haut
-    else if (screenPosition.y < m_mapRenderHeight - m_maxAreaHeight) {
-        m_cameraRect.y = hitbox.y * m_tileSize - (m_mapRenderHeight * m_tileSize - m_maxAreaHeight);
-    }
-
-    m_cameraRect.x = min<int>(max<int>(m_cameraRect.x, 0), (m_mapWidth - m_mapRenderWidth + 1) * m_tileSize);
-    m_cameraRect.y = min<int>(max<int>(m_cameraRect.y, 0), (m_mapHeight - m_mapRenderHeight + 1) * m_tileSize);
-
-    for (std::list<Entity>::iterator it = m_mobList->begin(); it != m_mobList->end(); it++) {
-        (*it).checkIfVisible(m_cameraRect, m_tileSize);
-    }
+//     m_player->doActions(*m_mobList, dt);
 
 
-    // nouveau systeme de camera
+// }
 
-    // float tileSize = m_camera->getTileSize();
-    // pair<float, float> playerPosition = target.getPosition().getCoords();
+// /**
+//  * @fn void Scene::moveCamera (Entity &entity)
+//  * @param target entite cible
+//  * @brief Deplace la camera vers l'entite cible
+// */
+// void Scene::moveCamera (const Entity &target) {
 
-    // SDL_Point positionOnScreen = {
-    //     playerPosition.first * tileSize,
-    //     playerPosition.second * tileSize
-    // };
+//     // ancien systeme de camera
 
-    pair<float, float> eCoords = target.getPosition().getCoords();
-    m_camera->moveTo(eCoords.first, eCoords.second);
+//     SDL_FRect hitbox = target.getHitbox();
+//     SDL_FRect screenPosition;
+
+//     screenPosition.x = hitbox.x * m_tileSize - m_cameraRect.x;
+//     screenPosition.y = hitbox.y * m_tileSize - m_cameraRect.y;
+//     screenPosition.w = hitbox.w * m_tileSize;
+//     screenPosition.h = hitbox.h * m_tileSize;
+
+//     // droite
+//     if (screenPosition.x + screenPosition.w > m_maxAreaWidth) {
+//         m_cameraRect.x = hitbox.x * m_tileSize - m_maxAreaWidth;
+//     }
+//     // gauche
+//     else if (screenPosition.x < m_mapRenderWidth - m_maxAreaWidth) {
+//         m_cameraRect.x = hitbox.x  * m_tileSize- (m_mapRenderWidth * m_tileSize - m_maxAreaWidth);
+//     }
+
+//     // bas
+//     if (screenPosition.y + screenPosition.h > m_maxAreaHeight) {
+//         m_cameraRect.y = hitbox.y * m_tileSize - m_maxAreaHeight;
+//     }
+//     // haut
+//     else if (screenPosition.y < m_mapRenderHeight - m_maxAreaHeight) {
+//         m_cameraRect.y = hitbox.y * m_tileSize - (m_mapRenderHeight * m_tileSize - m_maxAreaHeight);
+//     }
+
+//     m_cameraRect.x = min<int>(max<int>(m_cameraRect.x, 0), (m_mapWidth - m_mapRenderWidth + 1) * m_tileSize);
+//     m_cameraRect.y = min<int>(max<int>(m_cameraRect.y, 0), (m_mapHeight - m_mapRenderHeight + 1) * m_tileSize);
+
+//     for (std::list<Entity>::iterator it = m_mobList->begin(); it != m_mobList->end(); it++) {
+//         (*it).checkIfVisible(m_cameraRect, m_tileSize);
+//     }
 
 
-}
+//     // nouveau systeme de camera
+
+//     // float tileSize = m_camera->getTileSize();
+//     // pair<float, float> playerPosition = target.getPosition().getCoords();
+
+//     // SDL_Point positionOnScreen = {
+//     //     playerPosition.first * tileSize,
+//     //     playerPosition.second * tileSize
+//     // };
+
+//     pair<float, float> eCoords = target.getPosition().getCoords();
+//     m_camera->moveTo(eCoords.first, eCoords.second);
+
+
+// }
 
 
 /**
@@ -573,51 +409,51 @@ pair<int, int> Scene::getMapDim () const {
     return dim;
 }
 
-/**
- * @fn SDL_Point Scene::getCameraPos () const
- * @returns la position de la camera
- * @brief retourne la position de la camera
-*/
-SDL_Rect Scene::getCameraPos () const {
-    return m_cameraRect;
-}
+// /**
+//  * @fn SDL_Point Scene::getCameraPos () const
+//  * @returns la position de la camera
+//  * @brief retourne la position de la camera
+// */
+// SDL_Rect Scene::getCameraPos () const {
+//     return m_cameraRect;
+// }
 
-/**
- * @fn void Scene::setCameraPos (int x, int y)
- * @param x position x
- * @param y position y
- * @brief deplace la camera
-*/
-void Scene::setCameraPos (int x, int y) {
-    m_cameraRect.x = x;
-    m_cameraRect.y = y;
-}
+// /**
+//  * @fn void Scene::setCameraPos (int x, int y)
+//  * @param x position x
+//  * @param y position y
+//  * @brief deplace la camera
+// */
+// void Scene::setCameraPos (int x, int y) {
+//     m_cameraRect.x = x;
+//     m_cameraRect.y = y;
+// }
 
 
 
-/**
- * @fn void Scene::displayScene () const
- * @brief affiche toute la scene
-*/
-void Scene::displayScene () const {
-    displayMap();
-    // for_each(m_mobList->begin(), m_mobList->end(), *m_showEntities);
-    // for (std::list<Entity>::iterator it = m_mobList->begin(); it != m_mobList->end(); it++) {
-    //     if ((*it).isVisible())
-    //         (*it).show(m_renderer, m_cameraRect, m_tileSize, *m_mobEntityTextures);
-    // }
-    // m_player->getTarget()->show(m_renderer, m_cameraRect, m_tileSize, *m_mobEntityTextures);
+// /**
+//  * @fn void Scene::displayScene () const
+//  * @brief affiche toute la scene
+// */
+// void Scene::displayScene () const {
+//     displayMap();
+//     // for_each(m_mobList->begin(), m_mobList->end(), *m_showEntities);
+//     // for (std::list<Entity>::iterator it = m_mobList->begin(); it != m_mobList->end(); it++) {
+//     //     if ((*it).isVisible())
+//     //         (*it).show(m_renderer, m_cameraRect, m_tileSize, *m_mobEntityTextures);
+//     // }
+//     // m_player->getTarget()->show(m_renderer, m_cameraRect, m_tileSize, *m_mobEntityTextures);
 
-    m_camera->drawE(m_renderer, m_mobList, m_mobEntityTextures);
+//     m_camera->drawE(m_renderer, m_mobList, m_mobEntityTextures);
 
-}
+// }
 
-/**
- * @fn void Scene::displayMap (SDL_Renderer *renderer) const
- * @param renderer renderer
- * @brief affiche la carte
-*/
-void Scene::displayMap () const {
+// /**
+//  * @fn void Scene::displayMap (SDL_Renderer *renderer) const
+//  * @param renderer renderer
+//  * @brief affiche la carte
+// */
+// void Scene::displayMap () const {
 /* 
     // ancien systeme
     SDL_Rect rect = {0, 0, m_tileSize, m_tileSize};
@@ -655,10 +491,10 @@ void Scene::displayMap () const {
 
     // nouveau systeme
 
-    m_camera->draw(m_renderer, m_tiles, m_map);
+//     m_camera->draw(m_renderer, m_tiles, m_map);
 
 
-}
+// }
 
 
 
@@ -687,11 +523,12 @@ void Scene::removeVisibleEntity (Entity *e) {
 }
 
 void Scene::initPlayer () {
-    Entity e;
+    Entity e(this);
     m_mobList->push_front(e);
     m_player->setTarget(&m_mobList->front());
     
-    SDL_FRect prect = {5, 26, 1, 1};
+    // SDL_FRect prect = {5, 26, 1, 1};
+    SDL_FRect prect = {61, 26, 1, 1};
     Vector2D ppos;
     ppos.setCoords(prect.x + prect.w / 2, prect.y + prect.h / 2);
     string pname = "Joueur";
@@ -702,4 +539,10 @@ void Scene::initPlayer () {
     m_player->getTarget()->setHitbox(prect);
     m_player->getTarget()->setPosition(ppos);
     m_player->getTarget()->setPosition0(ppos);
+}
+
+void Scene::update () {
+    // m_player->getTarget()->move(*this);
+    m_player->getTarget()->move();
+    m_player->update();
 }
