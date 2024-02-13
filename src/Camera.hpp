@@ -49,10 +49,6 @@ class Camera {
     const SDL_FRect getBoundingBox () const;
     float getTileSize () const;
 
-    // temporaire
-    void draw(SDL_Renderer *r, std::vector<SDL_Texture*> *bTextures, std::vector<std::vector<int>> *map);
-    void drawE(SDL_Renderer *r, std::list<Entity> *list, std::vector<SDL_Texture*> *texture);
-
     void moveTo (float x, float y);
     void moveBy (float x, float y);
     void moveBy (const Vector2D &vector);
