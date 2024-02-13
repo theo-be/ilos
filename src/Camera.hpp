@@ -9,7 +9,27 @@
 
 #include "Entity.hpp"
 
+// zone pour la camera
+#define CAMERA_DEFAULT_AREA_WIDTH (3. / 4.)
+#define CAMERA_DEFAULT_AREA_HEIGHT (2. / 3.)
+
+
+#define DEFAULT_SCENE_WIDTH 40
+#define DEFAULT_SCENE_HEIGHT 22.5
+
+#define DEFAULT_TILE_LOCATION "ressources/fg"
+#define DEFAULT_ENTITY_LOCATION "ressources/entity"
+
+
+#define TILES_TEXTURE_COUNT 5
+#define ENTITY_TEXTURE_COUNT 4
+
+enum CameraMode {Default, Free, Locked, TargetEntity, LockEntity};
+
+
 class Entity;
+
+
 
 /**
  * @class Camera
@@ -19,8 +39,9 @@ class Camera {
 
     public:
 
+    Camera();
     // Camera (float x, float y, float w, float h);
-    Camera (float x, float y, float sceneWidth, float sceneHeight, float windowWidth, float windowHeight, SDL_Renderer *renderer);
+    Camera (float sceneWidth, float sceneHeight, float windowWidth, float windowHeight, SDL_Renderer *renderer);
     ~Camera ();
 
 
@@ -40,6 +61,7 @@ class Camera {
 
     void centerToTarget ();
     void followTarget ();
+    void setTarget(Entity *e);
     void setTargetScreenArea (float ratioX, float ratioY);
 
     void lockTo (Entity &entity);

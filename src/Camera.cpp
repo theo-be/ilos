@@ -8,33 +8,36 @@
 
 #include <cmath>
 
-#include "constants.hpp"
 
-#include "Vector.hpp"
+
 #include "Camera.hpp"
+#include "App.hpp"
+#include "Vector.hpp"
 #include "Entity.hpp"
 
-#include "texture_management.hpp"
 
 using namespace std;
 
 SDL_Renderer *Camera::m_renderer = nullptr;
-vector<SDL_Texture*> *Camera::m_tiles = nullptr;
-vector<SDL_Texture*> *Camera::m_mobEntityTextures = nullptr;
+vector<SDL_Texture*> *Camera::m_tiles = new vector<SDL_Texture*>;
+vector<SDL_Texture*> *Camera::m_mobEntityTextures = new vector<SDL_Texture*>;
 
+Camera::Camera () : m_position(0, 0) {
 
-Camera::Camera (float x, float y, float sceneWidth, float sceneHeight, float windowWidth, float windowHeight, SDL_Renderer *renderer) : m_position(x, y), m_sceneWidth(sceneWidth), m_sceneHeight(sceneHeight), m_screenWidth(windowWidth), m_screenHeight(windowHeight)
+    m_lockedX = 0;
+    m_lockedY = 0;
+}
+
+Camera::Camera (float sceneWidth, float sceneHeight, float windowWidth, float windowHeight, SDL_Renderer *renderer) : m_position(0, 0), m_sceneWidth(sceneWidth), m_sceneHeight(sceneHeight), m_screenWidth(windowWidth), m_screenHeight(windowHeight)
 {
     m_tileSize = m_screenWidth / m_sceneWidth;
     m_renderer = renderer;
 
-    m_tiles = new vector<SDL_Texture*>;
-    m_mobEntityTextures = new vector<SDL_Texture*>;
-
     m_lockedX = 0;
     m_lockedY = 0;
 
-    setTargetScreenArea(-1, -1);
+    m_cameraMode = TargetEntity;
+
 }
 
 Camera::~Camera () {
@@ -181,6 +184,11 @@ void Camera::centerToTarget () {
         m_position.setCoords(camPos.first, camPos.second);
         snapToMap();
     }
+}
+
+
+void Camera::setTarget (Entity *e) {
+    m_target = e;
 }
 
 
@@ -365,7 +373,7 @@ void Camera::loadEntityTextures (const char *fileName) {
         stream.str("");
         stream << fileName << i << ".bmp";
         tileFile = stream.str();
-        tile = loadTexture(m_renderer, tileFile);
+        tile = App::loadTexture(tileFile.c_str());
         if (tile) m_mobEntityTextures->push_back(tile);
         else break;
     }
@@ -390,7 +398,7 @@ void Camera::loadTilesTextures (const char *fileName) {
         stream.str("");
         stream << fileName << i << ".bmp";
         tileFile = stream.str();
-        tile = loadTexture(m_renderer, tileFile);
+        tile = App::loadTexture(tileFile.c_str());
         if (tile) m_tiles->push_back(tile);
         else break;
     }
@@ -570,7 +578,7 @@ void Camera::drawE(SDL_Renderer *r, std::list<Entity> *elist, std::vector<SDL_Te
 
     SDL_FRect rect; // sur l'ecran
     float width = 40., height = 22.5;
-    m_tileSize = WINDOW_WIDTH / width;
+    // m_tileSize = WINDOW_WIDTH / width;
     rect.w = m_tileSize;
     rect.h = m_tileSize;
     pair<float, float> ePos; // sur la carte
