@@ -17,8 +17,9 @@
 #include <vector>
 
 #include "Vector.hpp"
-#include "constants.hpp"
 #include "Scene.hpp"
+
+enum InteractionType {None, Talk};
 
 class Scene;
 
@@ -30,7 +31,7 @@ class Entity {
     public:
 
     // constructeurs
-    Entity ();
+    Entity (Scene *source);
     Entity (float x, float y, float w, float h, int hp, bool passive, const std::string &name, int textureId, int dialogueId);
 
 
@@ -96,7 +97,8 @@ class Entity {
     // non constantes
 
     void kill (std::list<Entity> &entityList, Entity &e);
-    void move (Scene &scene, bool left, bool right, bool up, bool down, unsigned int dt, SDL_Renderer*);
+    // void move (Scene &scene, bool left, bool right, bool up, bool down, unsigned int dt, SDL_Renderer*);
+    void move (Scene &scene);
     void moveToWorld (Scene &scene, float dx, float dy, SDL_Renderer*);
     void reduceInvincibilityTime (float time);
     void checkEntityInteractions ();
@@ -105,9 +107,13 @@ class Entity {
     void calculateGlobalPosition();
 
 
+    void move();
+
+
     protected:
     int m_id;
     SDL_FRect m_hitbox;
+    SDL_FRect m_testHitbox;
     int m_hp;
     bool m_passive;
     int m_textureId;
@@ -127,8 +133,8 @@ class Entity {
     std::list<Entity*> m_children;
     Entity *m_parent;
 
+    Scene *m_scene;
 
-    
 
     // position
 
@@ -156,20 +162,6 @@ class Entity {
 
 bool operator== (Entity const &a, Entity const &b);
 bool operator!= (Entity const &a, Entity const &b);
-
-
-// foncteur
-// inutilise 
-class ShowEntity {
-    public:
-    ShowEntity (SDL_Renderer *renderer, Scene *scene, std::vector<SDL_Texture*> *entityTextures);
-
-    void operator()(Entity &e);
-    
-    SDL_Renderer *m_renderer;
-    Scene *m_scene;
-    std::vector<SDL_Texture*> *m_entityTextures;
-};
 
 
 

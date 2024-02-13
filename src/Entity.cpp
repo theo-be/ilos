@@ -13,8 +13,8 @@
 #include <vector>
 #include <cmath>
 
-#include "constants.hpp"
 
+#include "App.hpp"
 #include "Scene.hpp"
 #include "Entity.hpp"
 #include "Vector.hpp"
@@ -25,17 +25,19 @@ int Entity::m_count = 0;
 int Entity::m_nextAvailableId = 1;
 
 // Constructeur par defaut
-Entity::Entity ()
+Entity::Entity (Scene *source)
 : m_id(m_nextAvailableId), m_hp(-1), m_passive(true), m_textureId(-1), m_touchGround(false), m_flightTime(0), m_invincibilityTime(0), m_availableInteraction(false), m_interactionType(None), m_interactionTarget(nullptr), m_playable(true), m_visible(true), m_name(""), m_parent(nullptr), m_position0(0., 0.), m_velocity0(0, 100.), m_velocity(0., 0.), m_acceleration(0., 1000.)
 {
     // m_count++;
     cout << "Entite cree, nombre : " << m_count << endl;
     m_nextAvailableId++;
     m_hitbox = {5, 27, 1, 1};
+    m_testHitbox = {-.5, -.5, 1., 1.};
     m_position.setCoords(5.5, 27.5);
     m_tilePosition.setCoords(5, 27);
     m_collideWith.clear();
     m_children.clear();
+    m_scene = source;
 }
 
 Entity::Entity (float x, float y, float w, float h, int hp, bool passive, const string &name, int textureId, int dialogueId) 
@@ -45,8 +47,9 @@ Entity::Entity (float x, float y, float w, float h, int hp, bool passive, const 
     cout << "Entite cree, nombre : " << m_count << endl;
     m_nextAvailableId++;
     m_position.setCoords(x, y);
-    m_tilePosition.setCoords(x / TILE_SIZE, y / TILE_SIZE);
-    m_hitbox = {x - w / 2, y - h / 2, w, h};
+    m_tilePosition.setCoords(0, 0);
+    m_hitbox = {- w / 2,- h / 2, w, h};
+    m_testHitbox = {(float)(x - w/2.), (float)(y - h/2.), w, h};
     m_collideWith.clear();
     m_children.clear();
 }
@@ -466,24 +469,91 @@ void Entity::doInteractions () {
 
 
 // Reecriture de la fonction move
+// /**
+//  * @fn void Entity::move (Scene &scene, bool left, bool right, bool up, bool down, unsigned int dt, SDL_Renderer *r)
+//  * @param scene scene
+//  * @param left mouvement a gauche
+//  * @param right mouvement a droite
+//  * @param up mouvement en haut
+//  * @param down mouvement en bas
+//  * @param dt temps en ms
+//  * @param r renderer
+//  * @brief deplace une entite
+//  * @see Entity::moveToWorld
+// */
+// void Entity::move (Scene &scene, bool left, bool right, bool up, bool down, unsigned int dt, SDL_Renderer *r) {
+//     int tileSize = scene.getTileSize();
+//     SDL_Rect camera = scene.getCameraPos();
+//     pair<float, float> v = m_velocity.getCoords();
+//     pair<float, float> a = m_acceleration.getCoords();
+//     pair<float, float> p = m_position.getCoords();
+//     // decalage de position
+//     float dx = 0., dy = 0.;
+//     m_acceleration.setCoords(a.first, .00003125);
+
+//     if (m_playable) {
+
+//         // Horizontal
+//         if ((left || right) && !(left && right)) {
+//             v.first = (right ? 0.0125 : -0.0125);
+//         } else v.first = .0;
+//         dx = v.first * dt;
+        
+//         // Vertical
+//         if (m_touchGround) {
+//             v.second = 0.0;
+//             m_flightTime = 0;
+//             if (up) {
+//                 v.second = -0.01875;
+//                 dy = v.second * dt;
+//                 m_touchGround = false;
+//             }
+//         } else {
+//             m_flightTime += dt;
+//             v.second += a.second * dt / 2;
+//             dy = v.second * dt;
+//             v.second += a.second * dt / 2;
+//         }
+
+//         m_velocity.setCoords(v.first, v.second);
+
+//         moveToWorld(scene, dx, dy, r);
+//     }
+
+//     // Eviter de sortir de la carte
+//     pair<int, int> dim = scene.getMapDim();
+//     m_hitbox.x = min<float>(max<float>(m_hitbox.x, 0), dim.first - m_hitbox.w);
+//     m_hitbox.y = min<float>(max<float>(m_hitbox.y, 0), dim.second - m_hitbox.h);
+
+//     p.first = min<float>(max<float>(m_hitbox.x + m_hitbox.w / 2, 0), dim.first - (m_hitbox.w / 2));
+//     p.second = min<float>(max<float>(m_hitbox.y + m_hitbox.h / 2, 0), dim.second - (m_hitbox.h / 2));
+//     m_position.setCoords(p.first, p.second);
+
+//     // l'entite est-elle visible
+//     checkIfVisible(camera, tileSize);
+// }
+
+
+// Reecriture de la fonction move
 /**
- * @fn void Entity::move (Scene &scene, bool left, bool right, bool up, bool down, unsigned int dt, SDL_Renderer *r)
+ * @fn void Entity::move (Scene &scene)
  * @param scene scene
- * @param left mouvement a gauche
- * @param right mouvement a droite
- * @param up mouvement en haut
- * @param down mouvement en bas
- * @param dt temps en ms
- * @param r renderer
  * @brief deplace une entite
  * @see Entity::moveToWorld
 */
-void Entity::move (Scene &scene, bool left, bool right, bool up, bool down, unsigned int dt, SDL_Renderer *r) {
-    int tileSize = scene.getTileSize();
-    SDL_Rect camera = scene.getCameraPos();
+void Entity::move (Scene &scene) {
     pair<float, float> v = m_velocity.getCoords();
     pair<float, float> a = m_acceleration.getCoords();
     pair<float, float> p = m_position.getCoords();
+
+
+    float dt = App::getDeltaTime();
+    bool left = App::isPressed(SDLK_q);
+    bool right = App::isPressed(SDLK_d);
+    bool up = App::isPressed(SDLK_z);
+
+
+
     // decalage de position
     float dx = 0., dy = 0.;
     m_acceleration.setCoords(a.first, .00003125);
@@ -514,7 +584,7 @@ void Entity::move (Scene &scene, bool left, bool right, bool up, bool down, unsi
 
         m_velocity.setCoords(v.first, v.second);
 
-        moveToWorld(scene, dx, dy, r);
+        moveToWorld(scene, dx, dy, nullptr);
     }
 
     // Eviter de sortir de la carte
@@ -527,8 +597,9 @@ void Entity::move (Scene &scene, bool left, bool right, bool up, bool down, unsi
     m_position.setCoords(p.first, p.second);
 
     // l'entite est-elle visible
-    checkIfVisible(camera, tileSize);
+    // checkIfVisible(camera, tileSize);
 }
+
 
 
 // Deuxieme reecriture de la fonction moveToWorld
@@ -773,6 +844,295 @@ void Entity::moveToWorld (Scene &scene, float dx, float dy, SDL_Renderer *r) {
     // }
 }
 
+
+/*
+somme des forces ext = ma
+
+pour avancer : acceleration qui se dissipe vite
+pour s'arreter : acceleration negative qui se dissipe vite
+
+gravite : acceleration constante : p = mg
+
+
+pour sauter : 
+
+
+force externe a l'utilisateur : 
+
+somme des forces : p=mg + ...
+
+
+F = ma
+a = F/m
+
+
+v = dr/dt
+a = d(dr/dt)/dt = d²r / dt²
+
+
+explicit euler
+a = F / m
+p += v * dt
+v += a * dt
+
+implicit euler
+
+a = F / m
+v += a * dt
+p += v * dt
+
+
+types de force :
+
+utilisateur :
+deplacement x -> comment commencer a se deplacer, continuer, finir
+deplacement y
+
+
+autres : 
+explosion ?
+
+idee : stocker les forces et faire une equation selon t et appliquer lerp
+
+
+creer une classe qui gere position vitesse acceleration et forces
+et qui s'occupe de tout modifier et qui connait les sources de toutes les forces
+
+
+on veut pouvoir modifier plus tard la vitesse comme si on avait unre potion de vitesse par ex
+
+mettre le sol en tant que force de frottement ce qui permet plus tard de faire de la glace
+
+
+deplacement lateral : 12.5 blocs en 1s
+
+saut : 5 blocs de hauteur en 1.5s
+vitesse instantanee : -.01875, acc : 
+
+*/
+
+/**
+ * sixieme reecriture de la methode move
+*/
+void Entity::move () {
+    bool up = App::isPressed(SDLK_SPACE),
+    // down = App::isPressed(SDLK_s),
+    left = App::isPressed(SDLK_q),
+    right = App::isPressed(SDLK_d);
+
+    float dt = App::getDeltaTime();
+
+    
+
+    // gravite
+    m_acceleration.moveTo(0., .00003125);
+    m_velocity.moveBy(m_acceleration * dt);
+
+    auto a = m_acceleration.getCoords();
+    auto v = m_velocity.getCoords();
+    auto p = m_position.getCoords();
+
+
+    // frottement
+    const float TRANSITION_SPEED = 1.;
+    const float TARGET_SPEED = .0125;
+
+
+    float leftSide;
+    float rightSide;
+
+    float upSide;
+    float downSide;
+
+
+
+    // horizontal
+    // float dx = .0125 * (right - left) * dt;
+    float dx = 0 * (1 - dt * TRANSITION_SPEED) + TARGET_SPEED * (dt * TRANSITION_SPEED);
+    dx *= (right - left);
+    m_position.moveBy(dx, 0.);
+    m_velocity.moveTo(dx, v.second);
+    v.first = dx;
+    p.first += dx;
+    leftSide = p.first + m_testHitbox.x;
+    rightSide = leftSide + m_testHitbox.w;
+
+    upSide = p.second + m_testHitbox.y;
+    downSide = upSide + m_testHitbox.h;
+
+
+    if (dx != 0.) {
+
+        // tester si le personnage est dans un bloc
+
+        // gauche
+        if (dx < 0.) {
+
+            // pour chaque bloc allant de haut en bas
+            for (float blockY = upSide; blockY < downSide; blockY++) {
+
+                if (m_scene->isInsideMap(leftSide, blockY)) {
+                    // cout << "dans la carte" << endl;
+                    p.first = floorf(p.first) + m_testHitbox.x + m_testHitbox.w;
+                    v.first = 0.;
+                    break;
+                }
+            }
+            if (m_scene->isInsideMap(leftSide, downSide - .001)) {
+                // cout << "dans la carte" << endl;
+                p.first = floorf(p.first) + m_testHitbox.x + m_testHitbox.w;
+                v.first = 0.;
+            }
+
+        }
+
+        
+        // droite
+        else {
+
+            // pour chaque bloc allant de haut en bas
+            for (float blockY = upSide; blockY < downSide; blockY++) {
+
+                if (m_scene->isInsideMap(rightSide, blockY)) {
+                    // cout << "dans la carte" << endl;
+                    p.first = floorf(p.first) + m_testHitbox.x + m_testHitbox.w;
+                    v.first = 0.;
+                    break;
+                }
+            }
+            if (m_scene->isInsideMap(rightSide, downSide - .001)) {
+                // cout << "dans la carte" << endl;
+                p.first = floorf(p.first) + m_testHitbox.x + m_testHitbox.w;
+                v.first = 0.;
+            }
+
+        }
+        
+        leftSide = p.first + m_testHitbox.x;
+        rightSide = leftSide + m_testHitbox.w;
+    }
+    
+    
+
+
+
+
+
+
+    // vertical
+    float dy = 0.;
+    if (m_touchGround) {
+
+        if (up) {
+            m_velocity.moveTo(v.first, -.01875);
+            v.second = -.01875;
+            m_touchGround = false;
+        }
+    }
+    
+    dy = v.second * dt;
+
+
+    // m_velocity.moveTo(dx, v.second);
+    m_velocity.moveBy(m_acceleration * dt);
+    // v.second = dy;
+    p.second += dy;
+    upSide = p.second + m_testHitbox.y;
+    downSide = upSide + m_testHitbox.h;
+
+
+    if (v.second != 0.) {
+
+        m_touchGround = false;
+
+        // haut
+        if (v.second < 0.) {
+            for (float blockX = leftSide; blockX < rightSide; blockX++) {
+
+                if (m_scene->isInsideMap(blockX, upSide)) {
+                    // cout << "dans la carte" << endl;
+                    p.second = floorf(p.second) + m_testHitbox.y + m_testHitbox.h;
+                    v.second *= -.25;
+
+                    break;
+                }
+            }
+            if (m_scene->isInsideMap(rightSide - .001, upSide)) {
+                // cout << "dans la carte" << endl;
+                p.second = floorf(p.second) + m_testHitbox.y + m_testHitbox.h;
+                v.second *= -.25;
+            }
+        }
+
+        
+        // bas
+        else {
+
+            // pour chaque bloc allant de gauche a droite
+            for (float blockX = leftSide; blockX < rightSide; blockX++) {
+
+                if (m_scene->isInsideMap(blockX, downSide)) {
+                    // cout << "dans la carte" << endl;
+                    p.second = floorf(p.second) + m_testHitbox.y + m_testHitbox.h;
+                    v.second = 0.;
+                    m_touchGround = true;
+                    break;
+                }
+            }
+            if (m_scene->isInsideMap(rightSide - .001, downSide)) {
+                // cout << "dans la carte" << endl;
+                p.second = floorf(p.second) + m_testHitbox.y + m_testHitbox.h;
+                v.second = 0.;
+                m_touchGround = true;
+            }
+
+        }
+    }
+
+
+
+    m_velocity.moveTo(v.first, v.second);
+    m_position.moveTo(p.first, p.second);
+
+
+    // // Eviter de sortir de la carte
+    // pair<int, int> dim = scene.getMapDim();
+    // m_hitbox.x = min<float>(max<float>(m_hitbox.x, 0), dim.first - m_hitbox.w);
+    // m_hitbox.y = min<float>(max<float>(m_hitbox.y, 0), dim.second - m_hitbox.h);
+
+    // p.first = min<float>(max<float>(m_hitbox.x + m_hitbox.w / 2, 0), dim.first - (m_hitbox.w / 2));
+    // p.second = min<float>(max<float>(m_hitbox.y + m_hitbox.h / 2, 0), dim.second - (m_hitbox.h / 2));
+    // m_position.setCoords(p.first, p.second);
+
+
+
+
+
+    // temporaire
+
+
+    // if (p.second > 27.5) {
+    //     p.second = 27.5;
+    //     m_position.moveTo(p.first, 27.5);
+    //     m_velocity.moveTo(v.first, 0);
+    //     m_touchGround = true;
+    // }
+
+    
+
+    m_hitbox.x = p.first - m_hitbox.w / 2.;
+    m_hitbox.y = p.second - m_hitbox.h / 2.;
+
+
+}
+
+
+
+
+
+
+
+
 /**
  * @fn void Entity::checkIfVisible (SDL_Rect &camera)
  * @param camera camera
@@ -815,33 +1175,3 @@ bool operator== (Entity const &a, Entity const &b) {
 bool operator!= (Entity const &a, Entity const &b) {
     return a.getId() != b.getId();
 }
-
-
-
-// classe ShowEntity
-
-
-
-
-
-
-
-
-ShowEntity::ShowEntity (SDL_Renderer *renderer, Scene *scene, std::vector<SDL_Texture*> *entityTextures)
-    : m_renderer(renderer), m_scene(scene), m_entityTextures(entityTextures)
-{}
-
-
-/**
- * @fn void ShowEntity::operator() (Entity &e)
- * @param e entite
- * @brief foncteur d'affichage des entites
- * @remark inutilise, voir Scene::displayScene
- * @see Scene::displayScene
-*/
-void ShowEntity::operator() (Entity &e) {
-    // if (e.isVisible())
-        // e.show(m_renderer, m_scene->getCameraPos(), *m_entityTextures);
-}
-
-
