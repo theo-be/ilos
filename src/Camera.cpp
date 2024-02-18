@@ -73,10 +73,9 @@ const SDL_FRect Camera::getBoundingBox () const {
 }
 
 
-// ???
-float Camera::getTileSize () const {
-    return m_tileSize * m_zoom;
-}
+// float Camera::getTileSize () const {
+//     return m_tileSize * m_zoom;
+// }
 
 /**
  * @fn void Camera::moveBy (const Vector2D &vector)
@@ -104,7 +103,8 @@ void Camera::moveBy (const Vector2D &vector) {
 
 /**
  * @fn void Camera::moveBy (float x, float y)
- * @param vector Vecteur de deplacement
+ * @param x x
+ * @param y y
  * @brief Decale la camera de vector
 */
 void Camera::moveBy (float x, float y) {

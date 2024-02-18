@@ -17,8 +17,8 @@
 #define DEFAULT_SCENE_WIDTH 40
 #define DEFAULT_SCENE_HEIGHT 22.5
 
-#define DEFAULT_TILE_LOCATION "ressources/fg"
-#define DEFAULT_ENTITY_LOCATION "ressources/entity"
+#define DEFAULT_TILE_LOCATION "resources/fg"
+#define DEFAULT_ENTITY_LOCATION "resources/entity"
 
 
 #define TILES_TEXTURE_COUNT 5
@@ -47,7 +47,7 @@ class Camera {
 
     const Vector2D getPosition () const;
     const SDL_FRect getBoundingBox () const;
-    float getTileSize () const;
+    // float getTileSize () const;
 
     void moveTo (float x, float y);
     void moveBy (float x, float y);
