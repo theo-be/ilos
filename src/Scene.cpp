@@ -164,7 +164,6 @@ int Scene::loadEntities () {
 int Scene::loadMobEntities () {
     ifstream file;
     Entity e(this);
-    SDL_FRect h = {0, 0, 1., 1.};
     string fileName = "data/entities/entities";
     string entityName = "";
     int value;
@@ -192,20 +191,17 @@ int Scene::loadMobEntities () {
         if (entityName == "DEFAULT") break;
         e.setName(entityName);
         file >> value;
-        h.x = value;
+        posX = value;
         file >> value;
-        h.y = value;
-        e.setHitbox(h);
+        posY = value;
+        v.moveTo(posX, posY);
+        e.setPosition(v);
         file >> value;
         e.setHp(value);
         file >> value;
         e.setPassive(value);
         file >> value;
         e.setTextureId(value);
-        posX = h.x + h.w / 2.;
-        posY = h.y + h.h / 2.;
-        v.setCoords(posX, posY);
-        e.setPosition(v);
         m_mobList->push_front(e);
         Entity::increaseCount();
         // cout << entityName << endl;
@@ -258,6 +254,8 @@ void Scene::addEntityToPlayerPos () {
     stream << "PEDRO" << e.getId();
     string name = stream.str();
     SDL_FRect h = m_player->getTarget()->getHitbox();
+    Vector2D p = m_player->getTarget()->getPosition();
+    e.setPosition(p);
     e.setName(name);
     e.setHitbox(h);
     e.setTextureId(0);
@@ -528,9 +526,9 @@ void Scene::initPlayer () {
     m_player->setTarget(&m_mobList->front());
     
     // SDL_FRect prect = {5, 26, 1, 1};
-    SDL_FRect prect = {61, 26, 1, 1};
+    SDL_FRect prect = {-.5, -.5, 1., 1.};
     Vector2D ppos;
-    ppos.setCoords(prect.x + prect.w / 2, prect.y + prect.h / 2);
+    ppos.setCoords(61.5, 26.5);
     string pname = "Joueur";
 
     m_player->getTarget()->setName(pname);
@@ -538,11 +536,15 @@ void Scene::initPlayer () {
     m_player->getTarget()->setHp(10);
     m_player->getTarget()->setHitbox(prect);
     m_player->getTarget()->setPosition(ppos);
-    m_player->getTarget()->setPosition0(ppos);
+    // m_player->getTarget()->setPosition0(ppos);
 }
 
 void Scene::update () {
     // m_player->getTarget()->move(*this);
     m_player->getTarget()->move();
+
+    // for (auto it = m_mobList->begin(); it != m_mobList->end(); it++) {
+    //     (*it).move();
+    // }
     m_player->update();
 }

@@ -113,7 +113,6 @@ class Entity {
     protected:
     int m_id;
     SDL_FRect m_hitbox;
-    SDL_FRect m_testHitbox;
     int m_hp;
     bool m_passive;
     int m_textureId;

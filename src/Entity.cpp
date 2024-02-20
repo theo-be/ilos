@@ -31,8 +31,8 @@ Entity::Entity (Scene *source)
     // m_count++;
     cout << "Entite cree, nombre : " << m_count << endl;
     m_nextAvailableId++;
-    m_hitbox = {5, 27, 1, 1};
-    m_testHitbox = {-.5, -.5, 1., 1.};
+    // m_hitbox = {5, 27, 1, 1};
+    m_hitbox = {-.5, -.5, 1., 1.};
     m_position.setCoords(5.5, 27.5);
     m_tilePosition.setCoords(5, 27);
     m_collideWith.clear();
@@ -48,8 +48,8 @@ Entity::Entity (float x, float y, float w, float h, int hp, bool passive, const 
     m_nextAvailableId++;
     m_position.setCoords(x, y);
     m_tilePosition.setCoords(0, 0);
+    // m_hitbox = {- w / 2,- h / 2, w, h};
     m_hitbox = {- w / 2,- h / 2, w, h};
-    m_testHitbox = {(float)(x - w/2.), (float)(y - h/2.), w, h};
     m_collideWith.clear();
     m_children.clear();
 }
@@ -416,16 +416,18 @@ void Entity::reduceInvincibilityTime (float time) {
 bool Entity::collideWith (Entity &entity) const {
     // SDL_FRect h = entity.m_hitbox;
     // return entity != *this && SDL_HasIntersection(&m_hitbox, &h);
+    pair<float, float> ppos = m_position.getCoords();
+    pair<float, float> epos = entity.m_position.getCoords();
     if (entity == *this) return false;
     if (
         (
-        (entity.m_hitbox.x >= m_hitbox.x && entity.m_hitbox.x <= m_hitbox.x + m_hitbox.w)
-        || (entity.m_hitbox.x + entity.m_hitbox.w >= m_hitbox.x && entity.m_hitbox.x + entity.m_hitbox.w <= m_hitbox.x + m_hitbox.w)
+        (epos.first + entity.m_hitbox.x >= ppos.first + m_hitbox.x && epos.first + entity.m_hitbox.x <= ppos.first + m_hitbox.x + m_hitbox.w)
+        || (epos.first + entity.m_hitbox.x + entity.m_hitbox.w >= ppos.first + m_hitbox.x && epos.first + entity.m_hitbox.x + entity.m_hitbox.w <= ppos.first + m_hitbox.x + m_hitbox.w)
         )
         &&
         ((
-        entity.m_hitbox.y >= m_hitbox.y && entity.m_hitbox.y <= m_hitbox.y + m_hitbox.h)
-        || (entity.m_hitbox.y + entity.m_hitbox.h >= m_hitbox.y && entity.m_hitbox.y + entity.m_hitbox.h <= m_hitbox.y + m_hitbox.h)
+        epos.second + entity.m_hitbox.y >= ppos.second + m_hitbox.y && epos.second + entity.m_hitbox.y <= ppos.second + m_hitbox.y + m_hitbox.h)
+        || (epos.second + entity.m_hitbox.y + entity.m_hitbox.h >= ppos.second + m_hitbox.y && epos.second + entity.m_hitbox.y + entity.m_hitbox.h <= ppos.second + m_hitbox.y + m_hitbox.h)
         )
     ) 
         return true;
@@ -928,7 +930,7 @@ void Entity::move () {
     m_acceleration.moveTo(0., .00003125);
     m_velocity.moveBy(m_acceleration * dt);
 
-    auto a = m_acceleration.getCoords();
+    // auto a = m_acceleration.getCoords();
     auto v = m_velocity.getCoords();
     auto p = m_position.getCoords();
 
@@ -954,11 +956,11 @@ void Entity::move () {
     m_velocity.moveTo(dx, v.second);
     v.first = dx;
     p.first += dx;
-    leftSide = p.first + m_testHitbox.x;
-    rightSide = leftSide + m_testHitbox.w;
+    leftSide = p.first + m_hitbox.x;
+    rightSide = leftSide + m_hitbox.w;
 
-    upSide = p.second + m_testHitbox.y;
-    downSide = upSide + m_testHitbox.h;
+    upSide = p.second + m_hitbox.y;
+    downSide = upSide + m_hitbox.h;
 
 
     if (dx != 0.) {
@@ -973,14 +975,14 @@ void Entity::move () {
 
                 if (m_scene->isInsideMap(leftSide, blockY)) {
                     // cout << "dans la carte" << endl;
-                    p.first = floorf(p.first) + m_testHitbox.x + m_testHitbox.w;
+                    p.first = floorf(p.first) + m_hitbox.x + m_hitbox.w;
                     v.first = 0.;
                     break;
                 }
             }
             if (m_scene->isInsideMap(leftSide, downSide - .001)) {
                 // cout << "dans la carte" << endl;
-                p.first = floorf(p.first) + m_testHitbox.x + m_testHitbox.w;
+                p.first = floorf(p.first) + m_hitbox.x + m_hitbox.w;
                 v.first = 0.;
             }
 
@@ -995,21 +997,21 @@ void Entity::move () {
 
                 if (m_scene->isInsideMap(rightSide, blockY)) {
                     // cout << "dans la carte" << endl;
-                    p.first = floorf(p.first) + m_testHitbox.x + m_testHitbox.w;
+                    p.first = floorf(p.first) + m_hitbox.x + m_hitbox.w;
                     v.first = 0.;
                     break;
                 }
             }
             if (m_scene->isInsideMap(rightSide, downSide - .001)) {
                 // cout << "dans la carte" << endl;
-                p.first = floorf(p.first) + m_testHitbox.x + m_testHitbox.w;
+                p.first = floorf(p.first) + m_hitbox.x + m_hitbox.w;
                 v.first = 0.;
             }
 
         }
         
-        leftSide = p.first + m_testHitbox.x;
-        rightSide = leftSide + m_testHitbox.w;
+        leftSide = p.first + m_hitbox.x;
+        rightSide = leftSide + m_hitbox.w;
     }
     
     
@@ -1037,8 +1039,8 @@ void Entity::move () {
     m_velocity.moveBy(m_acceleration * dt);
     // v.second = dy;
     p.second += dy;
-    upSide = p.second + m_testHitbox.y;
-    downSide = upSide + m_testHitbox.h;
+    upSide = p.second + m_hitbox.y;
+    downSide = upSide + m_hitbox.h;
 
 
     if (v.second != 0.) {
@@ -1051,7 +1053,7 @@ void Entity::move () {
 
                 if (m_scene->isInsideMap(blockX, upSide)) {
                     // cout << "dans la carte" << endl;
-                    p.second = floorf(p.second) + m_testHitbox.y + m_testHitbox.h;
+                    p.second = floorf(p.second) + m_hitbox.y + m_hitbox.h;
                     v.second *= -.25;
 
                     break;
@@ -1059,7 +1061,7 @@ void Entity::move () {
             }
             if (m_scene->isInsideMap(rightSide - .001, upSide)) {
                 // cout << "dans la carte" << endl;
-                p.second = floorf(p.second) + m_testHitbox.y + m_testHitbox.h;
+                p.second = floorf(p.second) + m_hitbox.y + m_hitbox.h;
                 v.second *= -.25;
             }
         }
@@ -1073,7 +1075,7 @@ void Entity::move () {
 
                 if (m_scene->isInsideMap(blockX, downSide)) {
                     // cout << "dans la carte" << endl;
-                    p.second = floorf(p.second) + m_testHitbox.y + m_testHitbox.h;
+                    p.second = floorf(p.second) + m_hitbox.y + m_hitbox.h;
                     v.second = 0.;
                     m_touchGround = true;
                     break;
@@ -1081,7 +1083,7 @@ void Entity::move () {
             }
             if (m_scene->isInsideMap(rightSide - .001, downSide)) {
                 // cout << "dans la carte" << endl;
-                p.second = floorf(p.second) + m_testHitbox.y + m_testHitbox.h;
+                p.second = floorf(p.second) + m_hitbox.y + m_hitbox.h;
                 v.second = 0.;
                 m_touchGround = true;
             }
@@ -1118,10 +1120,6 @@ void Entity::move () {
     //     m_touchGround = true;
     // }
 
-    
-
-    m_hitbox.x = p.first - m_hitbox.w / 2.;
-    m_hitbox.y = p.second - m_hitbox.h / 2.;
 
 
 }
