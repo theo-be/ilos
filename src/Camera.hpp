@@ -118,7 +118,7 @@ class Camera {
 
     Entity *m_target;
 
-    // Aire sur l'ecran par rapport a la camera ou l'entite cible peut se deplacer sans que la camera ne se deplace
+    // Aire sur l'ecran par rapport au centre de la camera ou l'entite cible peut se deplacer sans que la camera ne se deplace
     SDL_FRect m_targetScreenArea;
 
     static SDL_Renderer *m_renderer;

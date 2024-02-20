@@ -118,9 +118,11 @@ void Camera::moveBy (float x, float y) {
         if (!m_lockedY) {
             m_position.moveBy(x, 0);
         }
+
+        snapToMap();
     }
 
-    snapToMap();
+    
 
     // m_boundingBox.x += x;
     // m_boundingBox.y += y;
@@ -289,7 +291,7 @@ void Camera::setSceneDimension (float width, float height) {
 
 /**
  * @fn void Camera::update ()
- * @brief Met a jour les informations de la camera (par ex : sa position sur l'entite a suivre, etc.)
+ * @brief Met a jour les informations de la camera 
 */
 void Camera::update () {
     if (m_cameraMode == LockEntity)
@@ -297,56 +299,63 @@ void Camera::update () {
     if (m_cameraMode == TargetEntity)
         followTarget();
 
+
+    if (App::isPressed(SDLK_l) || App::isPressed(SDLK_k)) {
+        m_cameraMode = Free;
+        if (App::isPressed(SDLK_l))
+            m_position.moveBy(.2, 0);
+        else if (App::isPressed(SDLK_k))
+            m_position.moveBy(-.2, 0);
+    }
+
 }
 
-
+/**
+ * 
+*/
 void Camera::setTargetScreenArea (float ratioX, float ratioY) {
-    // pair<float, float> campos = m_position.getCoords();
     if (ratioX >= 0. && ratioX <= 1.) {
         m_targetScreenArea.w = m_sceneWidth * ratioX;
-        m_targetScreenArea.x = - m_targetScreenArea.w / 2;
+        m_targetScreenArea.x = - m_targetScreenArea.w / 2.;
     } else {
         m_targetScreenArea.w = CAMERA_DEFAULT_AREA_WIDTH;
-        m_targetScreenArea.x = - m_targetScreenArea.w / 2;
+        m_targetScreenArea.x = - m_targetScreenArea.w / 2.;
     }
     if (ratioY >= 0. && ratioY <= 1.) {
         m_targetScreenArea.h = m_sceneHeight * ratioY;
-        m_targetScreenArea.y = - m_targetScreenArea.h / 2;
+        m_targetScreenArea.y = - m_targetScreenArea.h / 2.;
     } else {
         m_targetScreenArea.h = CAMERA_DEFAULT_AREA_HEIGHT;
-        m_targetScreenArea.y = - m_targetScreenArea.h / 2;
+        m_targetScreenArea.y = - m_targetScreenArea.h / 2.;
     }
 
 }
 
 void Camera::followTarget () {
     pair<float, float> campos = m_position.getCoords();
-    SDL_FRect ehitbox = m_target->getHitbox();
-    float dist;
-
-    // cout << "ratio xy : " << m_targetScreenArea.w << ',' << m_targetScreenArea.h << '\n';
-    // cout << "rect  xy : " << m_targetScreenArea.x << ',' << m_targetScreenArea.y << '\n';
-
+    pair<float, float> ppos = m_target->getPosition().getCoords();
+    float leftSide = campos.first + m_targetScreenArea.x;
+    float rightSide = leftSide + m_targetScreenArea.w;
+    float upSide = campos.second + m_targetScreenArea.y;
+    float downSide = upSide + m_targetScreenArea.h;
+    // cout << leftSide;
     // trop a gauche
-    if (ehitbox.x < campos.first - m_sceneWidth / 2. - m_targetScreenArea.x * m_sceneWidth / 2.) {
-        dist = ehitbox.x - (campos.first - m_sceneWidth / 2. - m_targetScreenArea.x * m_sceneWidth / 2.);
-        m_position.moveBy(dist, 0.);
+    if (ppos.first < leftSide) {
+        // cout << "hors de la zone" << endl;
+        m_position.moveBy(ppos.first - leftSide, 0.);
     }
     // trop a droite
-    else if (ehitbox.x + ehitbox.w > campos.first + m_sceneWidth / 2. + m_targetScreenArea.x * m_sceneWidth / 2.) {
-        dist = (ehitbox.x + ehitbox.w)- (campos.first + m_sceneWidth / 2. + m_targetScreenArea.x * m_sceneWidth / 2.);
-        m_position.moveBy(dist, 0.);
+    else if (ppos.first > rightSide) {
+        m_position.moveBy(ppos.first - rightSide, 0.);
     }
-
     // trop haut
-    if (ehitbox.y < campos.second - m_sceneHeight / 2. - m_targetScreenArea.y * m_sceneHeight / 2.) {
-        dist = ehitbox.y - (campos.second - m_sceneHeight / 2. - m_targetScreenArea.y * m_sceneHeight / 2.);
-        m_position.moveBy(0., dist);
+    if (ppos.second < upSide) {
+        // cout << "hors de la zone" << endl;
+        m_position.moveBy(0., ppos.second - upSide);
     }
-    // trop bas
-    else if (ehitbox.y + ehitbox.h > campos.second + m_sceneHeight / 2. + m_targetScreenArea.y * m_sceneHeight / 2.) {
-        dist = (ehitbox.y + ehitbox.h)- (campos.second + m_sceneHeight / 2. + m_targetScreenArea.y * m_sceneHeight / 2.);
-        m_position.moveBy(0., dist);
+    // trop a bas
+    else if (ppos.second > downSide) {
+        m_position.moveBy(0., ppos.second - downSide);
     }
 
 }
@@ -439,7 +448,6 @@ void Camera::unloadTilesTextures () {
 */
 void Camera::displayMap (const vector<vector<int>> *map) {
 
-    snapToMap();
     SDL_FRect rect = {0, 0, m_tileSize, m_tileSize};
     pair<float, float> cameraPos = m_position.getCoords();
 
@@ -455,6 +463,8 @@ void Camera::displayMap (const vector<vector<int>> *map) {
     int mx = 0;
     int my = 0;
 
+    int id;
+
     rect.w = m_tileSize;
     rect.h = m_tileSize;
 
@@ -466,18 +476,13 @@ void Camera::displayMap (const vector<vector<int>> *map) {
     y1 = ((cameraPos.second - m_sceneHeight / 2.) - truncf(cameraPos.second - m_sceneHeight / 2.)) * m_tileSize * -1;
     y2 = y1 + m_screenHeight + (!y1 ? 0 : m_tileSize);
 
-    // cout << "scene w h : " << m_sceneWidth << ',' << m_sceneHeight << '\n';
     mx = (int)(cameraPos.first - m_sceneWidth / 2.);
     my = (int)(cameraPos.second - m_sceneHeight / 2.);
 
 
-
-
-    // cout << "mx,my : " << mx << ',' << my << '\n';
-
     for (float y = y1; y < y2; y += m_tileSize) {
         for (float x = x1; x < x2; x += m_tileSize) {
-            int id = map->at(my).at(mx);
+            id = (my >= 0 && my < map->size() && mx >= 0 && mx < map->at(my).size()) ? map->at(my).at(mx) : -1;
             rect.x = x;
             rect.y = y;
             if (id > 0) {
