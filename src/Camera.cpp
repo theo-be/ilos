@@ -332,6 +332,10 @@ void Camera::setTargetScreenArea (float ratioX, float ratioY) {
 }
 
 void Camera::followTarget () {
+
+    if (m_cameraMode == Locked)
+        return;
+    
     pair<float, float> campos = m_position.getCoords();
     pair<float, float> ppos = m_target->getPosition().getCoords();
     float leftSide = campos.first + m_targetScreenArea.x;
@@ -357,6 +361,8 @@ void Camera::followTarget () {
     else if (ppos.second > downSide) {
         m_position.moveBy(0., ppos.second - downSide);
     }
+
+    snapToMap();
 
 }
 
