@@ -2,6 +2,8 @@
 #define DEBUG_H
 
 #include <vector>
+#include <unordered_map>
+#include <string>
 
 #include "App.hpp"
 
@@ -13,16 +15,16 @@ class Debug : public App {
 
 
     static void addLabel (const char *name);
-    static void addInfo(const char *label, const std::string &info);
+    static void addInfo(const std::string &label, const std::string &info);
 
     static void update ();
-
+    static void displayInfos ();
 
     protected:
 
 
 
-    static std::vector<DebugInfo> m_debugSections;
+    // static std::unordered_map<std::string, std::vector<std::string>> m_debugSections;
 
 
     private:

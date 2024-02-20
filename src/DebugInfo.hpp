@@ -10,6 +10,8 @@
 class DebugInfo {
     public:
 
+    const std::string &getLabel () const;
+    void addInfo(const std::string &info);
 
 
     private:
