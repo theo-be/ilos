@@ -36,6 +36,7 @@ SDL_Window *App::m_window = nullptr;
 SDL_Renderer *App::m_renderer = nullptr;
 float App::m_deltaTime_ms = DEFAULT_DELTA_TIME;
 bool App::m_gameLaunched = true;
+bool App::m_gamePaused = false;
 unordered_map<SDL_Keycode, bool> *App::m_userInputs = nullptr;
 Font *App::m_font = nullptr;
 Scene *App::m_scene = nullptr;
@@ -106,8 +107,9 @@ void App::init () {
     
     cout << "Textures de la carte chargees" << endl;
 
-    m_camera->setMode(LockEntity);
+    m_camera->setMode(TargetEntity);
     m_camera->setTarget(m_scene->getPlayer()->getTarget());
+    m_camera->setTargetScreenArea(.67, .5);
 
     cout << "Camera totalement initialisee" << endl;
     // police
@@ -275,7 +277,8 @@ void App::main () {
         // evenements hors du jeu
         handleEvents();
 
-        doLogic();
+        if (!m_gamePaused)
+            doLogic();
 
         doDisplay();
 
@@ -284,8 +287,6 @@ void App::main () {
         SDL_Delay(DEFAULT_DELTA_TIME);
     }
 
-
-    // SDL_Delay(3000);
 
 }
 
@@ -342,7 +343,6 @@ void App::doDisplay () {
     m_camera->displayEntities(m_scene->getMobList());
 
 
-    m_font->displayText("test", 0, 0);
 
 
     SDL_RenderPresent(m_renderer);
