@@ -298,16 +298,6 @@ void Camera::update () {
         centerToTarget();
     if (m_cameraMode == TargetEntity)
         followTarget();
-
-
-    if (App::isPressed(SDLK_l) || App::isPressed(SDLK_k)) {
-        m_cameraMode = Free;
-        if (App::isPressed(SDLK_l))
-            m_position.moveBy(.2, 0);
-        else if (App::isPressed(SDLK_k))
-            m_position.moveBy(-.2, 0);
-    }
-
 }
 
 /**
