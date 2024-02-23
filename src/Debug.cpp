@@ -3,7 +3,8 @@
 #include <vector>
 #include <iterator>
 #include <string>
-
+#include <chrono>
+#include <sstream>
 #include "Debug.hpp"
 #include "App.hpp"
 
@@ -15,6 +16,7 @@ using namespace std;
 
 // unordered_map<string, vector<string>> Debug::m_debugSections;
 // unordered_map<string, DebugInfo> Debug::m_debugSections;
+
 
 Debug::Debug() {
 
@@ -38,6 +40,9 @@ void Debug::addInfo (const string &label, const string &info) {
 }
 
 void Debug::update() {
+
+    static auto t = chrono::steady_clock::now();
+
     if (isPressed(SDLK_p))
         m_gameLaunched = false;
     if (isPressed(SDLK_ESCAPE))
@@ -52,6 +57,14 @@ void Debug::update() {
     if (isPressed(SDLK_m)) {
         m_camera->centerToTarget();
     }
+
+    if (isPressed(SDLK_j)) {
+
+        auto dt = chrono::steady_clock::now() - t;
+        auto s = chrono::duration_cast<chrono::duration<double>>(dt);
+        cout << s.count() << endl;
+    }
+
 }
 
 
@@ -64,13 +77,13 @@ void Debug::displayInfos () {
     //     m_font->displayText((*it).first.c_str(), startX + offsetX, startY + offsetY);
     //     offsetY+= 20;
     // }
+
+    ostringstream os;
+    os << m_deltaTime_s << " s";
+
+    m_font->displayText(os.str().c_str(), 0, 0);
+
+    os.str("");
+    os << 1 / m_deltaTime_s << " IPS";
+    m_font->displayText(os.str().c_str(), 0, 20);
 }
-
-
-/* 
-player
-touches de debug
-dt
-fix police
-charger le joueur depuis un fichier
- */
