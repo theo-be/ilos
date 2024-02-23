@@ -13,7 +13,7 @@
 #include "Camera.hpp"
 
 // ms
-#define DEFAULT_DELTA_TIME 16
+#define DEFAULT_DELTA_TIME 0.01666666666
 
 #define DEFAULT_WINDOW_WIDTH 1280
 #define DEFAULT_WINDOW_HEIGHT 720
@@ -46,7 +46,7 @@ class App {
 
     static bool isPressed (SDL_Keycode keycode);
 
-    static float getDeltaTime ();
+    static double getDeltaTime ();
 
 
 
@@ -55,14 +55,14 @@ class App {
     static SDL_Texture *toTexture (SDL_Surface *surface);
 
 
-    // static void limitFPS ();
-    static void limitFPS (unsigned int);
 
 
     static int map (int x, int a, int b, int c, int d);
 
     protected:
 
+    static void limitFPS ();
+    static void limitFPS (unsigned int);
     static void initUserInputs ();
 
     static void initSDL ();
@@ -87,7 +87,8 @@ class App {
     static SDL_Window *m_window;
     static SDL_Renderer *m_renderer;
 
-    static float m_deltaTime_ms;
+    static double m_deltaTime_s;
+    static double m_targetDeltaTime_s;
 
     static bool m_gameLaunched;
     static bool m_gamePaused;

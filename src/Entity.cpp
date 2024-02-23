@@ -396,10 +396,10 @@ void Entity::show (SDL_Renderer *renderer, const SDL_Rect &camera, int tileSize,
 
 /**
  * @fn void Entity::reduceInvincibilityTime (float time)
- * @param time temps en ms
+ * @param time temps en s
  * @brief Reduction du temps d'invincibilite
 */
-void Entity::reduceInvincibilityTime (float time) {
+void Entity::reduceInvincibilityTime (double time) {
     if (m_invincibilityTime > 0.0) {
         m_invincibilityTime -= time;
         if (m_invincibilityTime < 0.0) m_invincibilityTime = 0.0;
@@ -451,7 +451,7 @@ void Entity::checkEntityInteractions () {
         } else {
             if (m_invincibilityTime <= 0 && m_passive != (*it)->m_passive) {
                 m_hp--;
-                m_invincibilityTime = 1000;
+                m_invincibilityTime = 1.;
                 cout << "Degats infliges par " << (*it)->m_name << endl;
             }
         }
@@ -549,7 +549,7 @@ void Entity::move (Scene &scene) {
     pair<float, float> p = m_position.getCoords();
 
 
-    float dt = App::getDeltaTime();
+    double dt = App::getDeltaTime();
     bool left = App::isPressed(SDLK_q);
     bool right = App::isPressed(SDLK_d);
     bool up = App::isPressed(SDLK_z);
@@ -922,12 +922,12 @@ void Entity::move () {
     left = App::isPressed(SDLK_q),
     right = App::isPressed(SDLK_d);
 
-    float dt = App::getDeltaTime();
+    double dt = App::getDeltaTime();
 
     
 
     // gravite
-    m_acceleration.moveTo(0., .00003125);
+    m_acceleration.moveTo(0., 31.25);
     m_velocity.moveBy(m_acceleration * dt);
 
     // auto a = m_acceleration.getCoords();
@@ -937,7 +937,7 @@ void Entity::move () {
 
     // frottement
     const float TRANSITION_SPEED = 1.;
-    const float TARGET_SPEED = .0125;
+    const float TARGET_SPEED = 12.5;
 
 
     float leftSide;
@@ -949,7 +949,7 @@ void Entity::move () {
 
 
     // horizontal
-    // float dx = .0125 * (right - left) * dt;
+    // float dx = 12.5 * (right - left) * dt;
     float dx = 0 * (1 - dt * TRANSITION_SPEED) + TARGET_SPEED * (dt * TRANSITION_SPEED);
     dx *= (right - left);
     m_position.moveBy(dx, 0.);
@@ -1026,8 +1026,8 @@ void Entity::move () {
     if (m_touchGround) {
 
         if (up) {
-            m_velocity.moveTo(v.first, -.01875);
-            v.second = -.01875;
+            m_velocity.moveTo(v.first, -18.75);
+            v.second = -18.75;
             m_touchGround = false;
         }
     }

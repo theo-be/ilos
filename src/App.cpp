@@ -13,6 +13,7 @@
 #include <iterator>
 #include <algorithm>
 #include <utility>
+#include <thread>
 
 
 #include "App.hpp"
@@ -34,7 +35,8 @@ int App::m_windowWidth = 0;
 int App::m_windowHeight = 0;
 SDL_Window *App::m_window = nullptr;
 SDL_Renderer *App::m_renderer = nullptr;
-float App::m_deltaTime_ms = DEFAULT_DELTA_TIME;
+double App::m_deltaTime_s = DEFAULT_DELTA_TIME;
+double App::m_targetDeltaTime_s = DEFAULT_DELTA_TIME;
 bool App::m_gameLaunched = true;
 bool App::m_gamePaused = false;
 unordered_map<SDL_Keycode, bool> *App::m_userInputs = nullptr;
@@ -283,8 +285,8 @@ void App::main () {
         doDisplay();
 
         // limitFPS(SDL_GetTicks() - 16);
-
-        SDL_Delay(DEFAULT_DELTA_TIME);
+        limitFPS();
+        // SDL_Delay(DEFAULT_DELTA_TIME * 1000);
     }
 
 
@@ -343,7 +345,7 @@ void App::doDisplay () {
     m_camera->displayEntities(m_scene->getMobList());
 
 
-
+    Debug::displayInfos();
 
     SDL_RenderPresent(m_renderer);
 }
@@ -375,8 +377,11 @@ bool App::isPressed (SDL_Keycode keycode) {
     return m_userInputs->at(keycode);
 }
 
-float App::getDeltaTime () {
-    return m_deltaTime_ms;
+/**
+ * @brief Donne le dt en secondes
+*/
+double App::getDeltaTime () {
+    return m_deltaTime_s;
 }
 
 /**
@@ -428,6 +433,36 @@ void App::limitFPS (unsigned int limit) {
     else SDL_Delay(limit - ticks);
 
     
+}
+
+
+void App::limitFPS () {
+    static chrono::steady_clock::time_point secondLastFrame = chrono::steady_clock::now();
+    static chrono::steady_clock::time_point lastFrame = chrono::steady_clock::now();
+
+    auto dt = lastFrame - secondLastFrame;
+    auto deltaTime = chrono::duration_cast<chrono::duration<double>>(dt);
+
+    secondLastFrame = lastFrame;
+    lastFrame = chrono::steady_clock::now();
+
+    m_deltaTime_s = deltaTime.count();
+
+    // if (lastFrame.time_since_epoch().count() > secondLastFrame.time_since_epoch().count() + m_targetDeltaTime_s) {
+    //     // ne rien faire
+    // } else if (secondLastFrame.time_since_epoch().count() + m_targetDeltaTime_s > lastFrame.time_since_epoch().count() + m_targetDeltaTime_s) {
+    //     this_thread::sleep_for(chrono::duration<double>(m_targetDeltaTime_s));
+    // } else {
+    //     this_thread::sleep_for(chrono::duration<double>(secondLastFrame.time_since_epoch().count() + m_targetDeltaTime_s - (lastFrame.time_since_epoch().count())));
+    // }
+
+// this_thread::sleep_for(chrono::duration<double>(secondLastFrame.time_since_epoch().count() + m_targetDeltaTime_s - (lastFrame.time_since_epoch().count())));
+    // this_thread::sleep_for(chrono::duration<double>(m_targetDeltaTime_s));
+    // this_thread::sleep_until(lastFrame + chrono::duration<double>(m_targetDeltaTime_s));
+
+
+    // cout << deltaTime.count() << endl;
+
 }
 
 int App::map (int x, int a, int b, int c, int d) {

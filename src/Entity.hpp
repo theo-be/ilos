@@ -100,7 +100,7 @@ class Entity {
     // void move (Scene &scene, bool left, bool right, bool up, bool down, unsigned int dt, SDL_Renderer*);
     void move (Scene &scene);
     void moveToWorld (Scene &scene, float dx, float dy, SDL_Renderer*);
-    void reduceInvincibilityTime (float time);
+    void reduceInvincibilityTime (double time);
     void checkEntityInteractions ();
     void doInteractions ();
     void checkIfVisible (SDL_Rect &camera, int tileSize);
